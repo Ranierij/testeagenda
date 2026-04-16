@@ -69,7 +69,7 @@ export default function NovoCliente() {
             bairro,
             cidade,
             estado,
-            user_id: user.data.user.id
+            user_id: user.data?.user?.id || null
         })
 
         console.log("ERRO:", error)
