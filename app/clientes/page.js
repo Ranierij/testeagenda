@@ -72,7 +72,7 @@ export default function NovoCliente() {
             user_id: user.data?.user?.id || null
         })
 
-        console.log("ERRO:", error)
+        console.log("ERRO SUPABASE:", error)
 
         if (error) {
             alert(error.message)
