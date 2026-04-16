@@ -40,17 +40,19 @@ export default function NovoCliente() {
             return
         }
 
-        // ✅ pega usuário corretamente
-        const { data, error: userError } = await supabase.auth.getUser()
+        // 🔥 pega usuário de forma segura
+        const { data: authData, error: authError } = await supabase.auth.getUser()
 
-        if (userError || !data?.user) {
-            alert("Usuário não autenticado")
+        console.log("AUTH DATA:", authData)
+        console.log("AUTH ERROR:", authError)
+
+        if (authError || !authData?.user?.id) {
+            alert("Usuário não logado")
             return
         }
 
-        const userId = data.user.id
+        const userId = authData.user.id
 
-        // verifica duplicado
         const { data: existente } = await supabase
             .from("clientes")
             .select("*")
@@ -77,7 +79,7 @@ export default function NovoCliente() {
             bairro,
             cidade,
             estado,
-            user_id: userId
+            user_id: authData.user.id
         })
 
         console.log("ERRO SUPABASE:", error)
