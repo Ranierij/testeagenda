@@ -34,13 +34,23 @@ export default function NovoCliente() {
             alert("Nome obrigatório")
             return
         }
+
         if (!nascimento) {
             alert("Selecione a data de nascimento")
             return
         }
-        const user = await supabase.auth.getUser()
-        user_id: userId
 
+        // ✅ pega usuário corretamente
+        const { data, error: userError } = await supabase.auth.getUser()
+
+        if (userError || !data?.user) {
+            alert("Usuário não autenticado")
+            return
+        }
+
+        const userId = data.user.id
+
+        // verifica duplicado
         const { data: existente } = await supabase
             .from("clientes")
             .select("*")
@@ -50,15 +60,12 @@ export default function NovoCliente() {
         if (existente) {
             alert("Cliente já cadastrado com esse telefone")
             return
-
-            console.log("USER:", user)
         }
-
-
 
         const nascimentoFormatado = nascimento
             ? nascimento.toISOString().split("T")[0]
             : null
+
         const { error } = await supabase.from("clientes").insert({
             nome,
             telefone,
@@ -70,7 +77,7 @@ export default function NovoCliente() {
             bairro,
             cidade,
             estado,
-            user_id: user.data?.user?.id || null
+            user_id: userId
         })
 
         console.log("ERRO SUPABASE:", error)
@@ -82,7 +89,6 @@ export default function NovoCliente() {
 
         alert("Salvou com sucesso")
 
-        // 👇 AQUI é o lugar certo
         router.push("/agenda")
         router.refresh()
     }
