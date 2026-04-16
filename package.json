@@ -1,0 +1,29 @@
+{
+  "name": "novonail",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@supabase/supabase-js": "^2.102.1",
+    "framer-motion": "^12.38.0",
+    "next": "16.2.2",
+    "react": "19.2.4",
+    "react-datepicker": "^9.1.0",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "autoprefixer": "^10.4.27",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.2",
+    "postcss": "^8.5.9",
+    "tailwindcss": "^3.4.19"
+  }
+}
