@@ -34,10 +34,8 @@ export default function NovoCliente() {
             alert("Nome obrigatório")
             return
         }
-        const regexData = /^\d{2}\/\d{2}\/\d{4}$/
-
-        if (!regexData.test(nascimento)) {
-            alert("Formato de data inválido")
+        if (!nascimento) {
+            alert("Selecione a data de nascimento")
             return
         }
         const user = await supabase.auth.getUser()
