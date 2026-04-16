@@ -39,6 +39,7 @@ export default function NovoCliente() {
             return
         }
         const user = await supabase.auth.getUser()
+        user_id: userId
 
         const { data: existente } = await supabase
             .from("clientes")
