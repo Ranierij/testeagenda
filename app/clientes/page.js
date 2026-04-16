@@ -27,6 +27,8 @@ export default function NovoCliente() {
     const [estado, setEstado] = useState("")
 
     async function salvar() {
+        const { data } = await supabase.auth.getSession()
+        console.log("SESSION:", data)
 
         console.log("SALVAR CLICADO")
 
