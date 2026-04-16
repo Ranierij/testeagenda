@@ -49,7 +49,11 @@ export default function NovoCliente() {
         if (existente) {
             alert("Cliente já cadastrado com esse telefone")
             return
+
+            console.log("USER:", user)
         }
+
+
 
         const nascimentoFormatado = nascimento
             ? nascimento.toISOString().split("T")[0]
@@ -68,7 +72,7 @@ export default function NovoCliente() {
             user_id: user.data.user.id
         })
 
-        console.log("RESULTADO:", error)
+        console.log("ERRO:", error)
 
         if (error) {
             alert(error.message)
