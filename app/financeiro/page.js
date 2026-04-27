@@ -55,16 +55,23 @@ export default function Financeiro() {
 
     return (
         <div className="min-h-screen bg-gray-100 p-4 md:p-6">
-
             <div className="w-full bg-white rounded-2xl shadow p-4 md:p-6 space-y-4">
 
                 {/* HEADER COM SETA */}
                 <div className="flex items-center justify-between mb-4">
                     <button
                         onClick={() => router.push("/agenda")}
-                        className="text-lg hover:scale-110 transition"
+                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition group"
                     >
-                        ←
+                        <svg
+                            className="w-5 h-5 stroke-gray-700 transition-transform duration-300 group-hover:-translate-x-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2.5"
+                            stroke="currentColor"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 6l-6 6 6 6" />
+                        </svg>
                     </button>
 
                     <h1 className="text-xl font-bold text-gray-800">

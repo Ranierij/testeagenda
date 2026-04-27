@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
+
 export default function Servicos() {
 
     const router = useRouter()
@@ -106,21 +107,31 @@ export default function Servicos() {
 
     return (
         <div className="min-h-screen bg-gray-100 flex justify-center items-start p-6">
-
             <div className="w-full max-w-xl bg-white rounded-2xl shadow p-8 space-y-4">
 
                 {/* HEADER */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center mb-6">
                     <button
                         onClick={() => router.push("/agenda")}
-                        className="text-lg hover:scale-110 transition"
+                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition group active:scale-95"
                     >
-                        ←
+                        <svg
+                            className="w-5 h-5 stroke-gray-700 transition-transform duration-300 group-hover:-translate-x-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2.5"
+                            stroke="currentColor"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 6l-6 6 6 6" />
+                        </svg>
                     </button>
 
-                    <h1 className="text-xl font-bold text-gray-800">
+                    <h1 className="flex-1 text-center text-xl font-bold text-gray-800">
                         Serviços
                     </h1>
+
+                    {/* Espaço para manter o título centralizado */}
+                    <div className="w-10" />
                 </div>
 
                 {/* FORM */}
