@@ -4,24 +4,32 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function Login() {
+export default function Cadastro() {
     const [email, setEmail] = useState('')
     const [senha, setSenha] = useState('')
-    const router = useRouter()
     const [mostrarSenha, setMostrarSenha] = useState(false)
+    const [loading, setLoading] = useState(false)
 
-    const entrar = async () => {
-        const { error } = await supabase.auth.signInWithPassword({
+    const router = useRouter()
+
+    const cadastrar = async () => {
+        setLoading(true)
+
+        const { data, error } = await supabase.auth.signUp({
             email,
             password: senha
         })
 
         if (error) {
             alert(error.message)
+            setLoading(false)
             return
         }
 
-        router.push('/')
+        alert('Cadastro realizado! Verifique seu email 📩')
+        setLoading(false)
+
+        router.push('/login')
     }
 
     return (
@@ -31,17 +39,17 @@ export default function Login() {
             <div className="flex-1 flex items-center justify-center bg-gray-100 px-6">
                 <div className="w-full max-w-md space-y-6 text-center">
 
-                    {/* LOGO */}
-                    <h1 className="text-4xl font-bold text-purple-800">
-                        World Nails
+                    <h1 className="text-4xl font-bold text-purple-700">
+                        Criar Conta
                     </h1>
 
-                    <p className="text-purple-700 font-medium">
-                        A sua clínica de forma mais prática.
+                    <p className="text-purple-600">
+                        Cadastre-se para começar
                     </p>
 
                     {/* INPUTS */}
                     <div className="space-y-3 text-left">
+
                         <input
                             placeholder="Email"
                             className="w-full p-3 border rounded-md bg-white"
@@ -50,12 +58,12 @@ export default function Login() {
 
                         <div className="relative">
                             <input
-                                type={mostrarSenha ? 'text' : 'password'} placeholder="Senha"
+                                type={mostrarSenha ? 'text' : 'password'}
+                                placeholder="Senha"
                                 className="w-full p-3 border rounded-md bg-white pr-10"
                                 onChange={e => setSenha(e.target.value)}
                             />
 
-                            {/* Ícone olho (fake por enquanto) */}
                             <span
                                 onClick={() => setMostrarSenha(!mostrarSenha)}
                                 className="absolute right-3 top-3 cursor-pointer"
@@ -63,42 +71,32 @@ export default function Login() {
                                 {mostrarSenha ? '🙈' : '👁️'}
                             </span>
                         </div>
-
-                        <div className="text-right">
-                            <a className="text-sm text-purple-700 cursor-pointer">
-                                Esqueci minha senha
-                            </a>
-                        </div>
                     </div>
 
                     {/* BOTÃO */}
                     <button
-                        onClick={entrar}
-                        className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-full font-semibold"
+                        onClick={cadastrar}
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-full font-semibold disabled:opacity-50"
                     >
-                        Entrar
+                        {loading ? 'Cadastrando...' : 'Cadastrar'}
                     </button>
 
-                    {/* GOOGLE */}
-                    <button className="w-full border py-3 rounded-full flex items-center justify-center gap-2">
-                        <span>🔵</span>
-                        Entrar com Google
-                    </button>
-
-                    {/* FOOTER */}
+                    {/* VOLTAR LOGIN */}
                     <p className="text-sm text-gray-600">
-                        Ainda não possui uma conta?{' '}
-                        <Link href="/cadastro" className="text-purple-700 font-semibold">
-                            Crie agora
+                        Já possui uma conta?{' '}
+                        <Link href="/login" className="text-purple-700 font-semibold">
+                            Entrar
                         </Link>
                     </p>
+
                 </div>
             </div>
 
             {/* DIREITA */}
             <div className="hidden md:block w-[40%] 
-    bg-[url('/lateral.png')] 
-    bg-cover 
+                bg-[url('/lateral.jpg')] 
+                bg-cover 
     bg-center 
     bg-no-repeat">
             </div>
