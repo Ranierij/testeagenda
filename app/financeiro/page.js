@@ -1,9 +1,13 @@
 "use client"
+
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { motion, AnimatePresence } from "framer-motion"
+import { useRouter } from "next/navigation"
 
 export default function Financeiro() {
+
+    const router = useRouter()
 
     const [agendamentos, setAgendamentos] = useState([])
     const [clientes, setClientes] = useState([])
@@ -34,7 +38,7 @@ export default function Financeiro() {
 
     const agHoje = agendamentos.filter(a => a.data === hojeStr)
 
-    // 💰 SOMA REAL (SEM VALOR FIXO)
+    // 💰 SOMAS
     const totalDinheiro = agHoje
         .filter(a => a.forma_pagamento === "dinheiro")
         .reduce((total, a) => total + (a.valor || 0), 0)
@@ -50,63 +54,77 @@ export default function Financeiro() {
     const total = totalDinheiro + totalPix + totalCartao
 
     return (
-        <div className="p-4">
+        <div className="min-h-screen bg-gray-100 p-4 md:p-6">
 
-            <h1 className="text-2xl font-bold mb-4">
-                Financeiro do Dia
-            </h1>
+            <div className="w-full bg-white rounded-2xl shadow p-4 md:p-6 space-y-4">
 
-            {/* CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {/* HEADER COM SETA */}
+                <div className="flex items-center justify-between mb-4">
+                    <button
+                        onClick={() => router.push("/agenda")}
+                        className="text-lg hover:scale-110 transition"
+                    >
+                        ←
+                    </button>
 
-                <div className="bg-green-500 text-white p-4 rounded-xl shadow">
-                    <div>💵 Dinheiro</div>
-                    <div className="text-xl font-bold">
-                        R$ {totalDinheiro.toFixed(2)}
+                    <h1 className="text-xl font-bold text-gray-800">
+                        Financeiro
+                    </h1>
+                </div>
+
+                {/* CARDS */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    <div className="bg-green-500 text-white p-4 rounded-xl shadow">
+                        <div>💵 Dinheiro</div>
+                        <div className="text-xl font-bold">
+                            R$ {totalDinheiro.toFixed(2)}
+                        </div>
+                        <div className="text-xs opacity-80 mt-1">
+                            {agHoje.filter(a => a.forma_pagamento === "dinheiro").length} atendimentos
+                        </div>
                     </div>
-                    <div className="text-xs opacity-80 mt-1">
-                        {agHoje.filter(a => a.forma_pagamento === "dinheiro").length} atendimentos
+
+                    <div className="bg-blue-500 text-white p-4 rounded-xl shadow">
+                        <div>📲 Pix</div>
+                        <div className="text-xl font-bold">
+                            R$ {totalPix.toFixed(2)}
+                        </div>
+                        <div className="text-xs opacity-80 mt-1">
+                            {agHoje.filter(a => a.forma_pagamento === "pix").length} atendimentos
+                        </div>
+                    </div>
+
+                    <div className="bg-purple-500 text-white p-4 rounded-xl shadow">
+                        <div>💳 Cartão</div>
+                        <div className="text-xl font-bold">
+                            R$ {totalCartao.toFixed(2)}
+                        </div>
+                        <div className="text-xs opacity-80 mt-1">
+                            {agHoje.filter(a => a.forma_pagamento === "cartao").length} atendimentos
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* TOTAL */}
+                <div className="bg-gray-900 text-white p-4 rounded-xl shadow">
+                    <div className="text-sm">Total do dia</div>
+                    <div className="text-2xl font-bold">
+                        R$ {total.toFixed(2)}
                     </div>
                 </div>
 
-                <div className="bg-blue-500 text-white p-4 rounded-xl shadow">
-                    <div>📲 Pix</div>
-                    <div className="text-xl font-bold">
-                        R$ {totalPix.toFixed(2)}
-                    </div>
-                    <div className="text-xs opacity-80 mt-1">
-                        {agHoje.filter(a => a.forma_pagamento === "pix").length} atendimentos
-                    </div>
-                </div>
-
-                <div className="bg-purple-500 text-white p-4 rounded-xl shadow">
-                    <div>💳 Cartão</div>
-                    <div className="text-xl font-bold">
-                        R$ {totalCartao.toFixed(2)}
-                    </div>
-                    <div className="text-xs opacity-80 mt-1">
-                        {agHoje.filter(a => a.forma_pagamento === "cartao").length} atendimentos
-                    </div>
-                </div>
+                <button
+                    onClick={() => setVerDetalhes(true)}
+                    className="bg-black text-white px-4 py-2 rounded"
+                >
+                    Ver detalhes
+                </button>
 
             </div>
 
-            {/* TOTAL */}
-            <div className="bg-gray-900 text-white p-4 rounded-xl mb-4 shadow">
-                <div className="text-sm">Total do dia</div>
-                <div className="text-2xl font-bold">
-                    R$ {total.toFixed(2)}
-                </div>
-            </div>
-
-            <button
-                onClick={() => setVerDetalhes(true)}
-                className="bg-black text-white px-4 py-2 rounded"
-            >
-                Ver detalhes
-            </button>
-
-            {/* MODAL DETALHES */}
+            {/* MODAL */}
             <AnimatePresence>
                 {verDetalhes && (
                     <motion.div
