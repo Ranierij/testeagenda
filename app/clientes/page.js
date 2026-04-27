@@ -37,10 +37,7 @@ export default function NovoCliente() {
             return
         }
 
-        if (!nascimento) {
-            alert("Selecione a data de nascimento")
-            return
-        }
+
 
         // 🔥 pega usuário de forma segura
         const { data: authData, error: authError } = await supabase.auth.getUser()
@@ -66,21 +63,19 @@ export default function NovoCliente() {
             return
         }
 
-        const nascimentoFormatado = nascimento
-            ? nascimento.toISOString().split("T")[0]
-            : null
+
 
         const { error } = await supabase.from("clientes").insert({
             nome,
             telefone,
-            nascimento: nascimentoFormatado,
-            cpf,
-            endereco,
-            numero,
-            cep,
-            bairro,
-            cidade,
-            estado,
+            //nascimento: nascimentoFormatado,
+            //cpf,//
+            //endereco,
+            // numero,
+            //cep,
+            // bairro,
+            // cidade,
+            //estado,
             user_id: authData.user.id
         })
 
@@ -153,107 +148,8 @@ export default function NovoCliente() {
 
 
 
-                    <DatePicker
-                        selected={nascimento}
-                        onChange={(date) => setNascimento(date)}
-                        locale="pt-BR"
-                        dateFormat="dd/MM/yyyy"
-                        placeholderText="Nascimento"
-                        showYearDropdown
-                        showMonthDropdown
-                        dropdownMode="select"
-                        openToDate={new Date(2000, 0)}
-                        maxDate={new Date()}
-                        yearDropdownItemNumber={100}
-                        scrollableYearDropdown
-                        wrapperClassName="w-full"
-                        className="w-full border p-2 mb-3 rounded"
-                    />
 
-                    <input
-                        type="text"
-                        placeholder="CPF"
-                        value={cpf}
-                        onChange={(e) => {
-                            let v = e.target.value.replace(/\D/g, "")
 
-                            if (v.length > 11) v = v.slice(0, 11)
-
-                            v = v
-                                .replace(/^(\d{3})(\d)/, "$1.$2")
-                                .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-                                .replace(/\.(\d{3})(\d)/, ".$1-$2")
-
-                            setCpf(v)
-                        }}
-                        className="w-full border p-2 mb-3 rounded"
-                    />
-
-                    <h2 className="text-blue-600 text-sm font-semibold mt-4">
-                        Endereço
-                    </h2>
-
-                    <input
-                        placeholder="Endereço"
-                        value={endereco}
-                        onChange={(e) => setEndereco(e.target.value)}
-                        className="w-full border p-3 rounded-lg"
-                    />
-
-                    <div className="flex gap-2">
-                        <input
-                            placeholder="Número"
-                            value={numero}
-                            onChange={(e) => setNumero(e.target.value)}
-                            className="w-1/2 border p-3 rounded-lg"
-                        />
-
-                        <input
-                            type="text"
-                            placeholder="Digite o CEP busca automatica"
-                            value={cep}
-                            onChange={async (e) => {
-                                let v = e.target.value.replace(/\D/g, "")
-                                if (v.length > 8) v = v.slice(0, 8)
-
-                                setCep(v)
-
-                                if (v.length === 8) {
-                                    const res = await fetch(`https://viacep.com.br/ws/${v}/json/`)
-                                    const data = await res.json()
-
-                                    if (!data.erro) {
-                                        setEndereco(data.logradouro || "")
-                                        setBairro(data.bairro || "")
-                                        setCidade(data.localidade || "")
-                                        setEstado(data.uf || "")
-                                    }
-                                }
-                            }}
-                            className="w-full border p-2 mb-3 rounded"
-                        />
-                    </div>
-
-                    <input
-                        placeholder="Bairro"
-                        value={bairro}
-                        onChange={(e) => setBairro(e.target.value)}
-                        className="w-full border p-3 rounded-lg"
-                    />
-
-                    <input
-                        placeholder="Cidade"
-                        value={cidade}
-                        onChange={(e) => setCidade(e.target.value)}
-                        className="w-full border p-3 rounded-lg"
-                    />
-
-                    <input
-                        placeholder="Estado"
-                        value={estado}
-                        onChange={(e) => setEstado(e.target.value)}
-                        className="w-full border p-3 rounded-lg"
-                    />
 
                 </div>
 

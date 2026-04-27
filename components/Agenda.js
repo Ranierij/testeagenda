@@ -29,6 +29,10 @@ export default function Agenda() {
     const [valor, setValor] = useState("")
     const [modoEdicao, setModoEdicao] = useState(false)
 
+    const [servicos, setServicos] = useState([])
+    const [servicoId, setServicoId] = useState("")
+    const [servicoSelecionado, setServicoSelecionado] = useState(null)
+
     const horas = []
     for (let h = 8; h <= 18; h++) {
         horas.push(`${String(h).padStart(2, "0")}:00`)
@@ -37,11 +41,13 @@ export default function Agenda() {
     const carregar = async () => {
         const { data: ag } = await supabase.from("agendamentos").select("*")
         const { data: cl } = await supabase.from("clientes").select("*")
+        const { data: sv } = await supabase.from("servicos").select("*")
 
         console.log("CLIENTES:", cl)
 
         setAgendamentos(ag || [])
         setClientes(cl || [])
+        setServicos(sv || [])
     }
 
     useEffect(() => {
@@ -108,7 +114,7 @@ export default function Agenda() {
     }
 
     const salvar = async () => {
-
+        if (!servicoId) return alert("Selecione um serviço")
         if (!clienteId) return alert("Selecione cliente")
 
         const dia =
@@ -148,16 +154,18 @@ export default function Agenda() {
             return
         }
 
-        // 🔥 AQUI ENTRA SUA NOVA LÓGICA
+        // 🔥 AQUI NOVA LÓGICA
         if (modoEdicao) {
             const { error } = await supabase
                 .from("agendamentos")
                 .update({
                     cliente_id: clienteId,
+                    servico_id: servicoId,
                     inicio: inicioStr,
                     fim: fimStr,
                     forma_pagamento: formaPagamento,
-                    valor: Number(valor)
+                    valor: Number(valor),
+                    duracao: duracao
                 })
                 .eq("id", eventoSelecionado.id)
 
@@ -171,12 +179,14 @@ export default function Agenda() {
                 .from("agendamentos")
                 .insert({
                     cliente_id: clienteId,
+                    servico_id: servicoId, // 🔥 NOVO
                     inicio: inicioStr,
                     fim: fimStr,
                     data: dia,
                     hora: horaSelecionada,
                     forma_pagamento: formaPagamento,
-                    valor: Number(valor)
+                    valor: Number(valor),
+                    duracao: duracao // 🔥 importante pra agenda inteligente
                 })
 
             if (error) {
@@ -255,7 +265,15 @@ export default function Agenda() {
                     Clientes
                 </button>
 
-                <button className="bg-gray-200 px-7 py-3 rounded-xl hover:bg-gray-300 transition active:scale-95">
+                <button
+                    onClick={() => router.push("/servicos")}
+                    className={`px-7 py-3 rounded-xl transition active:scale-95
+        ${pathname === "/servicos"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-200 hover:bg-gray-300"
+                        }
+    `}
+                >
                     Serviços
                 </button>
 
@@ -424,6 +442,32 @@ export default function Agenda() {
                                 {clientes.map(c => (
                                     <option key={c.id} value={c.id}>
                                         {c.nome}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <select
+                                value={servicoId}
+                                onChange={(e) => {
+                                    const id = e.target.value
+                                    setServicoId(id)
+
+                                    const servico = servicos.find(s => s.id === id)
+                                    setServicoSelecionado(servico)
+
+                                    // 🔥 auto preenche valor e duração
+                                    if (servico) {
+                                        setValor(servico.valor)
+                                        setDuracao(servico.duracao || 60)
+                                    }
+                                }}
+                                className="w-full border p-2 mb-3 rounded"
+                            >
+                                <option value="">Selecione o serviço</option>
+
+                                {servicos.map(s => (
+                                    <option key={s.id} value={s.id}>
+                                        {s.nome} - R$ {Number(s.valor).toFixed(2)}
                                     </option>
                                 ))}
                             </select>

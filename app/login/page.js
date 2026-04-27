@@ -9,17 +9,23 @@ export default function Login() {
     const router = useRouter()
 
     const entrar = async () => {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password: senha
         })
 
+        console.log("LOGIN DATA:", data)
+        console.log("LOGIN ERROR:", error)
+
         if (error) {
-            alert('Erro no login')
+            alert(error.message) // 👈 agora você vai ver o erro de verdade
             return
         }
 
-        router.push('/')
+        // pequena garantia de persistência
+        setTimeout(() => {
+            router.push('/')
+        }, 300)
     }
 
     return (
