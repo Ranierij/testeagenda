@@ -12,15 +12,19 @@ export default function Financeiro() {
     const [agendamentos, setAgendamentos] = useState([])
     const [clientes, setClientes] = useState([])
     const [verDetalhes, setVerDetalhes] = useState(false)
+    const [colaboradores, setColaboradores] = useState([])
 
     const hoje = new Date()
 
     const carregar = async () => {
         const { data: ag } = await supabase.from("agendamentos").select("*")
         const { data: cl } = await supabase.from("clientes").select("*")
+        const { data: col } = await supabase.from("colaboradores").select("*")
+
 
         setAgendamentos(ag || [])
         setClientes(cl || [])
+        setColaboradores(col || [])
     }
 
     useEffect(() => {
@@ -30,6 +34,9 @@ export default function Financeiro() {
     function getCliente(id) {
         return clientes.find(c => c.id === id)
     }
+    function getColaborador(id) {
+        return colaboradores.find(c => c.id === id)
+    }
 
     const hojeStr =
         hoje.getFullYear() + "-" +
@@ -37,6 +44,23 @@ export default function Financeiro() {
         String(hoje.getDate()).padStart(2, "0")
 
     const agHoje = agendamentos.filter(a => a.data === hojeStr)
+
+    const financeiroPorColaborador = {}
+
+    agHoje.forEach(a => {
+        const colId = a.colaborador_id || "sem"
+
+        if (!financeiroPorColaborador[colId]) {
+            financeiroPorColaborador[colId] = {
+                nome: getColaborador(colId)?.nome || "Sem colaborador",
+                total: 0,
+                atendimentos: 0
+            }
+        }
+
+        financeiroPorColaborador[colId].total += a.valor || 0
+        financeiroPorColaborador[colId].atendimentos += 1
+    })
 
     // 💰 SOMAS
     const totalDinheiro = agHoje
@@ -128,6 +152,29 @@ export default function Financeiro() {
                 >
                     Ver detalhes
                 </button>
+
+            </div>
+
+            <div className="mt-4 space-y-2">
+
+                <h2 className="font-bold">Por colaborador</h2>
+
+                {Object.values(financeiroPorColaborador).map((c, i) => (
+                    <div key={i} className="bg-white p-3 rounded shadow flex justify-between">
+
+                        <div>
+                            <div className="font-semibold">{c.nome}</div>
+                            <div className="text-sm text-gray-500">
+                                {c.atendimentos} atendimentos
+                            </div>
+                        </div>
+
+                        <div className="font-bold">
+                            R$ {c.total.toFixed(2)}
+                        </div>
+
+                    </div>
+                ))}
 
             </div>
 

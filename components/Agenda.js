@@ -33,6 +33,13 @@ export default function Agenda() {
     const [servicoId, setServicoId] = useState("")
     const [servicoSelecionado, setServicoSelecionado] = useState(null)
 
+    const [colaboradores, setColaboradores] = useState([])
+    const [colaboradorId, setColaboradorId] = useState("")
+    const [colaboradorFiltro, setColaboradorFiltro] = useState("")
+
+    const HORA_ALTURA = 80 // px por hora
+    const PIXEL_POR_MINUTO = HORA_ALTURA / 60
+
     const horas = []
     for (let h = 8; h <= 18; h++) {
         horas.push(`${String(h).padStart(2, "0")}:00`)
@@ -42,12 +49,15 @@ export default function Agenda() {
         const { data: ag } = await supabase.from("agendamentos").select("*")
         const { data: cl } = await supabase.from("clientes").select("*")
         const { data: sv } = await supabase.from("servicos").select("*")
+        const { data: col } = await supabase.from("colaboradores").select("*")
 
-        console.log("CLIENTES:", cl)
+
+        console.log("COLABORADORES:", col)
 
         setAgendamentos(ag || [])
         setClientes(cl || [])
         setServicos(sv || [])
+        setColaboradores(col || [])
     }
 
     useEffect(() => {
@@ -79,11 +89,56 @@ export default function Agenda() {
         return clientes.find(c => c.id === id)
     }
 
+    function getColaborador(id) {
+        return colaboradores.find(c => c.id === id)
+    }
+    function getCorColaborador(id) {
+        const cores = [
+            "bg-blue-500",
+            "bg-green-500",
+            "bg-purple-500",
+            "bg-pink-500",
+            "bg-orange-500",
+            "bg-indigo-500"
+        ]
+
+        const index = colaboradores.findIndex(c => c.id === id)
+        return cores[index % cores.length]
+    }
+
     function getEventosHora(hora) {
         return agendamentos.filter(a => {
             if (!a.inicio || !a.fim) return false
 
-            // 🔥 CORREÇÃO TIMEZONE (sem mudar estrutura)
+            // 🔥 filtro por colaborador
+            if (colaboradorFiltro && a.colaborador_id !== colaboradorFiltro) {
+                return false
+            }
+
+            const inicio = new Date(a.inicio.replace(" ", "T"))
+            const fim = new Date(a.fim.replace(" ", "T"))
+
+            const mesmoDia =
+                inicio.getDate() === data.getDate() &&
+                inicio.getMonth() === data.getMonth() &&
+                inicio.getFullYear() === data.getFullYear()
+
+            if (!mesmoDia) return false
+
+            const [h, m] = hora.split(":")
+            const slot = new Date(data)
+            slot.setHours(Number(h), Number(m), 0, 0)
+
+            return slot >= inicio && slot < fim
+        })
+    }
+
+    function getEventosHoraColaborador(hora, colaboradorId) {
+        return agendamentos.filter(a => {
+            if (!a.inicio || !a.fim) return false
+
+            if (a.colaborador_id !== colaboradorId) return false
+
             const inicio = new Date(a.inicio.replace(" ", "T"))
             const fim = new Date(a.fim.replace(" ", "T"))
 
@@ -111,6 +166,22 @@ export default function Agenda() {
         }
 
         return dias
+    }
+
+    function calcularEstiloEvento(evt) {
+        const inicio = new Date(evt.inicio.replace(" ", "T"))
+        const fim = new Date(evt.fim.replace(" ", "T"))
+
+        const minutosInicio = inicio.getHours() * 60 + inicio.getMinutes()
+        const minutosFim = fim.getHours() * 60 + fim.getMinutes()
+
+        const top = (minutosInicio - 8 * 60) * PIXEL_POR_MINUTO
+        const height = (minutosFim - minutosInicio) * PIXEL_POR_MINUTO
+
+        return {
+            top: `${top}px`,
+            height: `${height}px`
+        }
     }
 
     const salvar = async () => {
@@ -161,6 +232,7 @@ export default function Agenda() {
                 .update({
                     cliente_id: clienteId,
                     servico_id: servicoId,
+                    colaborador_id: colaboradorId,
                     inicio: inicioStr,
                     fim: fimStr,
                     forma_pagamento: formaPagamento,
@@ -180,6 +252,7 @@ export default function Agenda() {
                 .insert({
                     cliente_id: clienteId,
                     servico_id: servicoId, // 🔥 NOVO
+                    colaborador_id: colaboradorId,
                     inicio: inicioStr,
                     fim: fimStr,
                     data: dia,
@@ -200,6 +273,7 @@ export default function Agenda() {
         setModoEdicao(false)
         setModalNovo(false)
         setClienteId("")
+        setColaboradorId("")
         setValor("")
         carregar()
     }
@@ -232,6 +306,9 @@ export default function Agenda() {
         window.open(`https://wa.me/55${numero}`, "_blank")
     }
 
+    const listaColaboradores = colaboradorFiltro
+        ? colaboradores.filter(c => c.id === colaboradorFiltro)
+        : colaboradores
     return (
         <div className="flex flex-col min-h-screen">
 
@@ -240,6 +317,13 @@ export default function Agenda() {
             </div>
 
             <div className="flex flex-wrap justify-center gap-4 p-3 bg-white border-b">
+
+                <button
+                    onClick={() => setColaboradorFiltro("")}
+                    className="mb-2 ml-2 px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                    Mostrar todos
+                </button>
 
                 <button
                     onClick={() => router.push("/agenda")}
@@ -266,6 +350,13 @@ export default function Agenda() {
                 </button>
 
                 <button
+                    onClick={() => router.push("/colaboradores")}
+                    className="bg-gray-200 px-7 py-3 rounded-xl hover:bg-gray-300 transition active:scale-95"
+                >
+                    Colaboradores
+                </button>
+
+                <button
                     onClick={() => router.push("/servicos")}
                     className={`px-7 py-3 rounded-xl transition active:scale-95
         ${pathname === "/servicos"
@@ -276,6 +367,8 @@ export default function Agenda() {
                 >
                     Serviços
                 </button>
+
+
 
                 <button
                     onClick={() => router.push("/financeiro")}
@@ -293,9 +386,13 @@ export default function Agenda() {
 
             </div>
 
+
+
             <div className="flex flex-col md:flex-row flex-1">
 
-                <div className="w-full md:w-72 bg-gray-100 p-4 flex flex-col">
+                {/* SIDEBAR */}
+                <div className="hidden md:flex w-72 bg-gray-100 p-4 flex-col">
+
 
                     <h2 className="font-bold mb-2">Calendário</h2>
 
@@ -365,60 +462,103 @@ export default function Agenda() {
 
                     </div>
 
-                    {horas.map(hora => {
-                        const eventos = getEventosHora(hora)
-                        const ocupado = eventos.length > 0
+                    <div className="overflow-x-auto md:overflow-visible">
+                        {/* HEADER COLABORADORES */}
+                        <div
+                            className="grid"
+                            style={{
+                                gridTemplateColumns: `80px repeat(${colaboradores.length}, minmax(140px, 1fr))`
+                            }}
+                        >
+                            <div></div>
+                            {colaboradores.map(col => (
+                                <div
+                                    key={col.id}
+                                    onClick={() => setColaboradorFiltro(col.id)}
+                                    className={`
+            cursor-pointer text-center font-semibold p-3 text-white
+            ${getCorColaborador(col.id)}
+            ${colaboradorFiltro === col.id ? "ring-4 ring-black" : ""}
+        `}
+                                >
+                                    {col.nome}
+                                </div>
+                            ))}
+                        </div>
 
-                        return (
+                        {/* LINHAS DE HORÁRIO */}
+                        {horas.map(hora => (
                             <div
                                 key={hora}
-                                className={`
-                border-b h-16 md:h-20 flex items-center px-4
-                ${ocupado ? "bg-gray-50" : "hover:bg-gray-100"}
-            `}
+                                className="grid"
+                                style={{
+                                    gridTemplateColumns: `80px repeat(${colaboradores.length}, minmax(140px, 1fr))`
+                                }}
                             >
 
-                                <div className="w-20 text-gray-500 text-sm">
+                                {/* HORA */}
+                                <div className="p-2 text-sm text-gray-500 border-r">
                                     {hora}
                                 </div>
 
-                                <div
-                                    className="flex-1 relative h-full"
-                                    onClick={() => {
-                                        // 🔥 só abre se NÃO tiver evento
-                                        if (!ocupado) abrirNovo(hora)
-                                    }}
-                                >
+                                {/* COLUNAS */}
+                                {colaboradores.map(col => {
+                                    const eventos = getEventosHoraColaborador(hora, col.id)
+                                    const ocupado = eventos.length > 0
 
-                                    {eventos.map((evt, i) => {
-                                        const cliente = getCliente(evt.cliente_id)
+                                    return (
+                                        <div
+                                            key={col.id}
+                                            className={`
+                            relative h-24 border-r transition
+                            ${colaboradorFiltro === col.id ? "bg-yellow-50" : ""}
+                            ${ocupado ? "bg-gray-50" : "hover:bg-gray-100"}
+                        `}
+                                            onClick={() => {
+                                                if (!ocupado) {
+                                                    setColaboradorId(col.id)
+                                                    abrirNovo(hora)
+                                                }
+                                            }}
+                                        >
 
-                                        return (
-                                            <div
-                                                key={i}
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    abrirEvento(evt)
-                                                }}
-                                                className="
-                                absolute left-24 right-4 top-2 bottom-2
-                                bg-gray-200 border-l-4 border-blue-500
-                                text-gray-800 rounded p-2 text-sm
-                                shadow-sm hover:shadow-md transition
-                                cursor-pointer
-                            "
-                                            >
-                                                <div className="font-semibold">{cliente?.nome}</div>
-                                                <div className="text-xs text-gray-500">{hora}</div>
-                                            </div>
-                                        )
-                                    })}
+                                            {eventos.map((evt, i) => {
+                                                const cliente = getCliente(evt.cliente_id)
 
-                                </div>
+                                                return (
+                                                    <div
+                                                        key={i}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            abrirEvento(evt)
+                                                        }}
+                                                        className={`
+                                        absolute inset-1
+                                        ${getCorColaborador(evt.colaborador_id)}
+                                        text-white
+                                        rounded p-2 text-xs
+                                        cursor-pointer
+                                    `}
+                                                    >
+                                                        <div className="font-semibold text-sm leading-tight">
+                                                            {cliente?.nome}
+                                                        </div>
+
+                                                        <div className="text-[10px] opacity-80">
+                                                            {hora}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+
+                                        </div>
+                                    )
+                                })}
 
                             </div>
-                        )
-                    })}
+                        ))}
+
+                    </div>
 
 
                 </div>
@@ -440,6 +580,20 @@ export default function Agenda() {
                             >
                                 <option value="">Selecione o cliente</option>
                                 {clientes.map(c => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.nome}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <select
+                                value={colaboradorId}
+                                onChange={(e) => setColaboradorId(e.target.value)}
+                                className="w-full border p-2 mb-3 rounded"
+                            >
+                                <option value="">Selecione o colaborador</option>
+
+                                {colaboradores.map(c => (
                                     <option key={c.id} value={c.id}>
                                         {c.nome}
                                     </option>
