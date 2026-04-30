@@ -185,9 +185,9 @@ export default function Agenda() {
     }
 
     const salvar = async () => {
-        if (!servicoId) return alert("Selecione um serviço")
-        if (!clienteId) return alert("Selecione cliente")
-
+        if (!clienteId) return alert("Selecione o cliente")
+        if (!colaboradorId) return alert("Selecione o colaborador")
+        if (!servicoId) return alert("Selecione o serviço")
         const dia =
             data.getFullYear() + "-" +
             String(data.getMonth() + 1).padStart(2, "0") + "-" +
@@ -196,21 +196,37 @@ export default function Agenda() {
         const [h, m] = horaSelecionada.split(":")
 
         const inicio = new Date(
-            Date.UTC(
-                data.getFullYear(),
-                data.getMonth(),
-                data.getDate(),
-                Number(h),
-                Number(m)
-            )
+            data.getFullYear(),
+            data.getMonth(),
+            data.getDate(),
+            Number(h),
+            Number(m)
         )
 
         const fim = new Date(inicio.getTime() + duracao * 60000)
 
-        const inicioStr = inicio.toISOString().slice(0, 19).replace("T", " ")
-        const fimStr = fim.toISOString().slice(0, 19).replace("T", " ")
+        function formatLocal(date) {
+            const pad = (n) => String(n).padStart(2, "0")
+
+            return (
+                date.getFullYear() + "-" +
+                pad(date.getMonth() + 1) + "-" +
+                pad(date.getDate()) + " " +
+                pad(date.getHours()) + ":" +
+                pad(date.getMinutes()) + ":00"
+            )
+        }
+
+        const inicioStr = formatLocal(inicio)
+        const fimStr = formatLocal(fim)
 
         const conflito = agendamentos.some(a => {
+
+            if (modoEdicao && a.id === eventoSelecionado.id) return false
+
+            // 🔥 só bloqueia se for o MESMO COLABORADOR
+            if (a.colaborador_id !== colaboradorId) return false
+
             const aInicio = new Date(a.inicio.replace(" ", "T"))
             const aFim = new Date(a.fim.replace(" ", "T"))
 
@@ -318,12 +334,7 @@ export default function Agenda() {
 
             <div className="flex flex-wrap justify-center gap-4 p-3 bg-white border-b">
 
-                <button
-                    onClick={() => setColaboradorFiltro("")}
-                    className="mb-2 ml-2 px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-                >
-                    Mostrar todos
-                </button>
+
 
                 <button
                     onClick={() => router.push("/agenda")}
@@ -474,16 +485,47 @@ export default function Agenda() {
                             {colaboradores.map(col => (
                                 <div
                                     key={col.id}
-                                    onClick={() => setColaboradorFiltro(col.id)}
-                                    className={`
-            cursor-pointer text-center font-semibold p-3 text-white
-            ${getCorColaborador(col.id)}
-            ${colaboradorFiltro === col.id ? "ring-4 ring-black" : ""}
-        `}
+                                    className={`text-center font-semibold p-3 text-white ${getCorColaborador(col.id)}`}
                                 >
                                     {col.nome}
                                 </div>
                             ))}
+                        </div>
+
+                        <div className="w-full overflow-x-auto border-b bg-white">
+                            <div className="flex gap-2 px-2 py-2 min-w-max">
+
+                                {/* ABA TODOS */}
+                                <button
+                                    onClick={() => setColaboradorFiltro("")}
+                                    className={`
+                px-4 py-2 rounded-full text-sm whitespace-nowrap transition
+                ${!colaboradorFiltro
+                                            ? "bg-black text-white"
+                                            : "bg-gray-200 hover:bg-gray-300"}
+            `}
+                                >
+                                    Todos
+                                </button>
+
+                                {/* ABAS COLABORADORES */}
+                                {colaboradores.map(col => (
+                                    <button
+                                        key={col.id}
+                                        onClick={() => setColaboradorFiltro(col.id)}
+                                        className={`
+                    px-4 py-2 rounded-full text-sm whitespace-nowrap text-white transition
+                    ${getCorColaborador(col.id)}
+                    ${colaboradorFiltro === col.id
+                                                ? "ring-2 ring-black scale-105"
+                                                : "opacity-70"}
+                `}
+                                    >
+                                        {col.nome}
+                                    </button>
+                                ))}
+
+                            </div>
                         </div>
 
                         {/* LINHAS DE HORÁRIO */}
@@ -657,7 +699,8 @@ export default function Agenda() {
 
                             <button
                                 onClick={salvar}
-                                className="w-full bg-green-500 text-white p-2 mb-2 rounded"
+                                disabled={!clienteId || !colaboradorId || !servicoId}
+                                className="w-full bg-green-500 disabled:bg-gray-300 text-white p-2 mb-2 rounded"
                             >
                                 Salvar
                             </button>
@@ -686,14 +729,19 @@ export default function Agenda() {
                             </h2>
                             <button
                                 onClick={() => {
+
                                     const inicio = new Date(eventoSelecionado.inicio.replace(" ", "T"))
 
-                                    setClienteId(eventoSelecionado.cliente_id)
+                                    setClienteId(eventoSelecionado.cliente_id || "")
+                                    setColaboradorId(eventoSelecionado.colaborador_id || "")
+                                    setServicoId(eventoSelecionado.servico_id || "")
+
                                     setHoraSelecionada(
-                                        `${String(inicio.getHours()).padStart(2, "0")}:00`
+                                        `${String(inicio.getHours()).padStart(2, "0")}:${String(inicio.getMinutes()).padStart(2, "0")}`
                                     )
+
                                     setValor(eventoSelecionado.valor || "")
-                                    setFormaPagamento(eventoSelecionado.forma_pagamento)
+                                    setFormaPagamento(eventoSelecionado.forma_pagamento || "dinheiro")
 
                                     const dur =
                                         (new Date(eventoSelecionado.fim.replace(" ", "T")) -
