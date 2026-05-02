@@ -4,12 +4,68 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { motion, AnimatePresence } from "framer-motion"
 import { usePathname, useRouter } from "next/navigation"
+import { Calendar, Users, User, Scissors, Wallet } from "lucide-react"
+import { Plus } from "lucide-react"
+
+
+
+function NavButton({ href, children, pathname, router }) {
+    const ativo = pathname.startsWith(href)
+
+    return (
+        <button
+            onClick={() => router.push(href)}
+            className={`
+                px-7 py-3 rounded-xl transition active:scale-95
+                ${ativo
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }
+            `}
+        >
+            {children}
+        </button>
+    )
+}
+
+function MobileNavItem({ icon, label, active, onClick }) {
+    return (
+        <button
+            onClick={onClick}
+            className="flex flex-col items-center justify-center flex-1 py-1"
+        >
+            <div
+                className={`
+                    transition-all duration-200
+                    ${active ? "text-black scale-110" : "text-gray-400"}
+                `}
+            >
+                {icon}
+            </div>
+
+            <span
+                className={`
+                    text-[10px] mt-1
+                    ${active ? "text-black font-medium" : "text-gray-400"}
+                `}
+            >
+                {label}
+            </span>
+
+            {active && (
+                <div className="w-1 h-1 bg-black rounded-full mt-1" />
+            )}
+        </button>
+    )
+}
 
 export default function Agenda() {
 
     const [data, setData] = useState(new Date())
     const [agendamentos, setAgendamentos] = useState([])
     const [clientes, setClientes] = useState([])
+    const [mostrarCalendario, setMostrarCalendario] = useState(false)
+
 
     const [modalNovo, setModalNovo] = useState(false)
     const [modalView, setModalView] = useState(false)
@@ -39,6 +95,9 @@ export default function Agenda() {
 
     const HORA_ALTURA = 80 // px por hora
     const PIXEL_POR_MINUTO = HORA_ALTURA / 60
+    const [isMobile, setIsMobile] = useState(false)
+    const larguraColuna = isMobile ? 90 : 140
+    const larguraHora = isMobile ? 60 : 80
 
     const horas = []
     for (let h = 8; h <= 18; h++) {
@@ -63,6 +122,20 @@ export default function Agenda() {
     useEffect(() => {
         carregar()
     }, [data])
+
+    useEffect(() => {
+        function handleResize() {
+            setIsMobile(window.innerWidth < 768)
+        }
+
+        handleResize() // roda quando abre a tela
+
+        window.addEventListener("resize", handleResize)
+
+        return () => {
+            window.removeEventListener("resize", handleResize)
+        }
+    }, [])
 
     function formatarData(d) {
         return d.toLocaleDateString("pt-BR")
@@ -183,6 +256,8 @@ export default function Agenda() {
             height: `${height}px`
         }
     }
+
+
 
     const salvar = async () => {
         if (!clienteId) return alert("Selecione o cliente")
@@ -326,67 +401,34 @@ export default function Agenda() {
         ? colaboradores.filter(c => c.id === colaboradorFiltro)
         : colaboradores
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen pb-20 md:pb-0">
 
             <div style={{ height: "150px" }} className="w-full bg-gray-300 flex items-center justify-center mt-3 rounded-xl shadow-sm">
                 Ads 💰
             </div>
 
-            <div className="flex flex-wrap justify-center gap-4 p-3 bg-white border-b">
+            <div className="hidden md:flex flex-wrap justify-center gap-4 p-3 bg-white border-b">
 
-
-
-                <button
-                    onClick={() => router.push("/agenda")}
-                    className={`px-7 py-3 rounded-xl transition active:scale-95
-        ${pathname === "/agenda"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 hover:bg-gray-300"
-                        }
-    `}
-                >
+                <NavButton href="/agenda" pathname={pathname} router={router}>
                     Agenda
-                </button>
+                </NavButton>
 
-                <button
-                    onClick={() => router.push("/clientes")}
-                    className={`px-7 py-3 rounded-xl transition active:scale-95
-        ${pathname === "/clientes"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 hover:bg-gray-300"
-                        }
-    `}
-                >
+                <NavButton href="/clientes" pathname={pathname} router={router}>
                     Clientes
-                </button>
+                </NavButton>
 
-                <button
-                    onClick={() => router.push("/colaboradores")}
-                    className="bg-gray-200 px-7 py-3 rounded-xl hover:bg-gray-300 transition active:scale-95"
-                >
+                <NavButton href="/colaboradores" pathname={pathname} router={router}>
+
                     Colaboradores
-                </button>
+                </NavButton>
 
-                <button
-                    onClick={() => router.push("/servicos")}
-                    className={`px-7 py-3 rounded-xl transition active:scale-95
-        ${pathname === "/servicos"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 hover:bg-gray-300"
-                        }
-    `}
-                >
+                <NavButton href="/servicos" pathname={pathname} router={router}>
                     Serviços
-                </button>
+                </NavButton>
 
-
-
-                <button
-                    onClick={() => router.push("/financeiro")}
-                    className="bg-gray-200 px-7 py-3 rounded-xl hover:bg-gray-300 transition active:scale-95"
-                >
+                <NavButton href="/financeiro" pathname={pathname} router={router}>
                     Financeiro
-                </button>
+                </NavButton>
 
                 <button
                     onClick={() => setModalNovo(true)}
@@ -397,48 +439,68 @@ export default function Agenda() {
 
             </div>
 
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t flex justify-around items-center py-2 z-50">
+
+                <MobileNavItem
+                    icon={<Calendar size={20} />}
+                    label="Agenda"
+                    active={pathname.startsWith("/agenda")}
+                    onClick={() => router.push("/agenda")}
+                />
+
+                <MobileNavItem
+                    icon={<Users size={20} />}
+                    label="Clientes"
+                    active={pathname.startsWith("/clientes")}
+                    onClick={() => router.push("/clientes")}
+                />
+
+                <MobileNavItem
+                    icon={<User size={20} />}
+                    label="Colab"
+                    active={pathname.startsWith("/colaboradores")}
+                    onClick={() => router.push("/colaboradores")}
+                />
+
+                <MobileNavItem
+                    icon={<Scissors size={20} />}
+                    label="Serviços"
+                    active={pathname.startsWith("/servicos")}
+                    onClick={() => router.push("/servicos")}
+                />
+
+                <MobileNavItem
+                    icon={<Wallet size={20} />}
+                    label="Financeiro"
+                    active={pathname.startsWith("/financeiro")}
+                    onClick={() => router.push("/financeiro")}
+                />
+
+            </div>
+
+            <motion.button
+                onClick={() => setModalNovo(true)}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
+                className="
+        fixed bottom-24 right-4 md:bottom-6 md:right-6
+        bg-black text-white
+        w-14 h-14 rounded-full
+        flex items-center justify-center
+        shadow-lg
+        z-50
+    "
+            >
+                <Plus size={24} />
+            </motion.button>
 
 
             <div className="flex flex-col md:flex-row flex-1">
 
                 {/* SIDEBAR */}
-                <div className="hidden md:flex w-72 bg-gray-100 p-4 flex-col">
+                <div className="hidden md:flex w-64 bg-white border-r flex-col p-4">
 
 
-                    <h2 className="font-bold mb-2">Calendário</h2>
-
-                    <div className="grid grid-cols-7 gap-1 text-xs">
-                        {gerarCalendario().map((d, i) => {
-
-                            const isHoje = d.toDateString() === new Date().toDateString()
-                            const isSelecionado = d.toDateString() === data.toDateString()
-
-                            return (
-                                <div
-                                    key={i}
-                                    onClick={() => setData(d)}
-                                    className={`
-                                        p-2 text-center cursor-pointer rounded
-                                        ${isSelecionado ? "bg-blue-600 text-white" : ""}
-                                        ${!isSelecionado && isHoje ? "bg-blue-100" : ""}
-                                        hover:bg-blue-200
-                                    `}
-                                >
-                                    {d.getDate()}
-                                </div>
-                            )
-                        })}
-                    </div>
-
-                    <h2 className="font-bold mt-4 mb-2">Clientes</h2>
-
-                    <div className="flex-1 overflow-y-auto">
-                        {clientes.map(c => (
-                            <div key={c.id} className="bg-blue-500 text-white p-2 mb-2 rounded">
-                                {c.nome}
-                            </div>
-                        ))}
-                    </div>
 
                     <div className="mt-4 bg-gray-300 h-72 flex items-center justify-center rounded">
                         Ads 💰
@@ -448,37 +510,49 @@ export default function Agenda() {
 
                 <div className="flex-1 overflow-y-auto">
 
-                    <div className="flex items-center justify-center gap-10 p-4 border-b bg-white">
+                    <div className="flex items-center justify-between px-4 py-3 border-b bg-white sticky top-0 z-40">
 
-                        <button onClick={() => mudarDia(-1)} className="bg-gray-200 px-5 py-3 rounded-xl text-lg">
+                        {/* ESQUERDA */}
+                        <button
+                            onClick={() => mudarDia(-1)}
+                            className="bg-gray-100 px-3 py-2 rounded-lg"
+                        >
                             ⬅️
                         </button>
 
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={data.toISOString()}
-                                initial={{ opacity: 0, x: 40 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -40 }}
-                                transition={{ duration: 0.2 }}
-                                className="text-xl font-bold text-center min-w-[160px]"
-                            >
-                                {formatarData(data)}
-                            </motion.div>
-                        </AnimatePresence>
+                        {/* CENTRO (DATA) */}
+                        <button
+                            onClick={() => setMostrarCalendario(true)}
+                            className="flex flex-col items-center justify-center px-4 py-2 rounded-lg hover:bg-gray-100 transition"
+                        >
+                            <span className="text-lg font-semibold leading-none">
+                                {data.getDate()}
+                            </span>
 
-                        <button onClick={() => mudarDia(1)} className="bg-gray-200 px-5 py-3 rounded-xl text-lg">
+                            <span className="text-xs text-gray-500 uppercase">
+                                {data.toLocaleDateString("pt-BR", { month: "short" })}
+                            </span>
+
+                            <span className="text-[10px] text-gray-400">
+                                {data.getFullYear()}
+                            </span>
+                        </button>
+
+                        {/* DIREITA */}
+                        <button
+                            onClick={() => mudarDia(1)}
+                            className="bg-gray-100 px-3 py-2 rounded-lg"
+                        >
                             ➡️
                         </button>
 
                     </div>
 
-                    <div className="overflow-x-auto md:overflow-visible">
-                        {/* HEADER COLABORADORES */}
+                    <div className="overflow-x-auto">                        {/* HEADER COLABORADORES */}
                         <div
                             className="grid"
                             style={{
-                                gridTemplateColumns: `80px repeat(${colaboradores.length}, minmax(140px, 1fr))`
+                                gridTemplateColumns: `80px repeat(${colaboradores.length}, minmax(90px, 1fr))`
                             }}
                         >
                             <div></div>
@@ -534,7 +608,7 @@ export default function Agenda() {
                                 key={hora}
                                 className="grid"
                                 style={{
-                                    gridTemplateColumns: `80px repeat(${colaboradores.length}, minmax(140px, 1fr))`
+                                    gridTemplateColumns: `${larguraHora}px repeat(${colaboradores.length}, minmax(${larguraColuna}px, 1fr))`
                                 }}
                             >
 
@@ -576,6 +650,10 @@ export default function Agenda() {
                                                         }}
                                                         className={`
                                         absolute inset-1
+                                        rounded-lg
+                                        shadow-sm
+                                        hover:shadow-md
+                                        transition
                                         ${getCorColaborador(evt.colaborador_id)}
                                         text-white
                                         rounded p-2 text-xs
@@ -807,6 +885,44 @@ export default function Agenda() {
                             <button
                                 onClick={() => setModalView(false)}
                                 className="w-full bg-gray-300 p-2 rounded"
+                            >
+                                Fechar
+                            </button>
+
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {mostrarCalendario && (
+                    <motion.div
+                        className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+                    >
+                        <div className="bg-white p-4 rounded-xl w-80">
+
+                            <h2 className="font-semibold mb-3 text-center">
+                                Selecionar Data
+                            </h2>
+
+                            <div className="grid grid-cols-7 gap-1 text-sm">
+                                {gerarCalendario().map((d, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={() => {
+                                            setData(d)
+                                            setMostrarCalendario(false)
+                                        }}
+                                        className="p-2 text-center rounded hover:bg-gray-200 cursor-pointer"
+                                    >
+                                        {d.getDate()}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={() => setMostrarCalendario(false)}
+                                className="w-full mt-3 bg-gray-200 p-2 rounded"
                             >
                                 Fechar
                             </button>
