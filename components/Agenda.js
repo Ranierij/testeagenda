@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import { motion, AnimatePresence } from "framer-motion"
 import { usePathname, useRouter } from "next/navigation"
@@ -72,6 +72,7 @@ export default function Agenda() {
 
     const [clienteId, setClienteId] = useState("")
     const [duracao, setDuracao] = useState(60)
+    const [user, setUser] = useState(null)
 
     const [eventoSelecionado, setEventoSelecionado] = useState(null)
     const [horaSelecionada, setHoraSelecionada] = useState(null)
@@ -104,24 +105,39 @@ export default function Agenda() {
         horas.push(`${String(h).padStart(2, "0")}:00`)
     }
 
-    const carregar = async () => {
-        const { data: ag } = await supabase.from("agendamentos").select("*")
-        const { data: cl } = await supabase.from("clientes").select("*")
-        const { data: sv } = await supabase.from("servicos").select("*")
-        const { data: col } = await supabase.from("colaboradores").select("*")
+    const carregar = useCallback(async () => {
+        try {
+            const [agRes, clRes, svRes, colRes] = await Promise.all([
+                supabase.from("agendamentos").select("*"),
+                supabase.from("clientes").select("*"),
+                supabase.from("servicos").select("*"),
+                supabase.from("colaboradores").select("*"),
+            ])
 
+            setAgendamentos(agRes.data || [])
+            setClientes(clRes.data || [])
+            setServicos(svRes.data || [])
+            setColaboradores(colRes.data || [])
+        } catch (err) {
+            console.error("Erro ao carregar:", err)
+        }
+    }, [])
 
-        console.log("COLABORADORES:", col)
-
-        setAgendamentos(ag || [])
-        setClientes(cl || [])
-        setServicos(sv || [])
-        setColaboradores(col || [])
-    }
 
     useEffect(() => {
-        carregar()
-    }, [data])
+        async function getUser() {
+            const { data } = await supabase.auth.getUser()
+            setUser(data.user)
+        }
+
+        getUser()
+    }, [])
+
+    useEffect(() => {
+        if (user) {
+            carregar()
+        }
+    }, [user, data, carregar])
 
     useEffect(() => {
         function handleResize() {
@@ -135,6 +151,15 @@ export default function Agenda() {
         return () => {
             window.removeEventListener("resize", handleResize)
         }
+    }, [])
+
+    useEffect(() => {
+        async function getUser() {
+            const { data } = await supabase.auth.getUser()
+            setUser(data.user)
+        }
+
+        getUser()
     }, [])
 
     function formatarData(d) {
@@ -260,6 +285,10 @@ export default function Agenda() {
 
 
     const salvar = async () => {
+        if (!user) {
+            alert("Erro: usuário não carregado")
+            return
+        }
         if (!clienteId) return alert("Selecione o cliente")
         if (!colaboradorId) return alert("Selecione o colaborador")
         if (!servicoId) return alert("Selecione o serviço")
@@ -321,6 +350,7 @@ export default function Agenda() {
             const { error } = await supabase
                 .from("agendamentos")
                 .update({
+                    user_id: user.id,
                     cliente_id: clienteId,
                     servico_id: servicoId,
                     colaborador_id: colaboradorId,
@@ -341,6 +371,7 @@ export default function Agenda() {
             const { error } = await supabase
                 .from("agendamentos")
                 .insert({
+                    user_id: user.id,
                     cliente_id: clienteId,
                     servico_id: servicoId, // 🔥 NOVO
                     colaborador_id: colaboradorId,
