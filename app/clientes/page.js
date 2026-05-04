@@ -1,182 +1,238 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
-import DatePicker, { registerLocale } from "react-datepicker"
-import ptBR from "date-fns/locale/pt-BR"
-import "react-datepicker/dist/react-datepicker.css"
+import { useAuth } from "@/contexts/AuthContext"
 
-registerLocale("pt-BR", ptBR)
-
-
-export default function NovoCliente() {
+export default function Clientes() {
 
     const router = useRouter()
+    const { user, loading } = useAuth()
 
-    const [nome, setNome] = useState("")
-    const [telefone, setTelefone] = useState("")
-    const [nascimento, setNascimento] = useState(null)
-    const [cpf, setCpf] = useState("")
+    const [clientes, setClientes] = useState([])
+    const [busca, setBusca] = useState("")
+    const [modalCliente, setModalCliente] = useState(false)
+    const [clienteEditando, setClienteEditando] = useState(null)
 
-    const [endereco, setEndereco] = useState("")
-    const [numero, setNumero] = useState("")
-    const [cep, setCep] = useState("")
-    const [bairro, setBairro] = useState("")
-    const [cidade, setCidade] = useState("")
-    const [estado, setEstado] = useState("")
+    // 🔥 CARREGAR CLIENTES
+    const carregarClientes = useCallback(async () => {
+        if (!user) return
 
-    async function salvar() {
-        const { data } = await supabase.auth.getSession()
-        console.log("SESSION:", data)
-
-        console.log("SALVAR CLICADO")
-
-        if (!nome) {
-            alert("Nome obrigatório")
-            return
-        }
-
-
-
-        // 🔥 pega usuário de forma segura
-        const { data: authData, error: authError } = await supabase.auth.getUser()
-
-        console.log("AUTH DATA:", authData)
-        console.log("AUTH ERROR:", authError)
-
-        if (authError || !authData?.user?.id) {
-            alert("Usuário não logado")
-            return
-        }
-
-        const userId = authData.user.id
-
-        const { data: existente } = await supabase
+        const { data, error } = await supabase
             .from("clientes")
             .select("*")
-            .eq("telefone", telefone)
-            .maybeSingle()
-
-        if (existente) {
-            alert("Cliente já cadastrado com esse telefone")
-            return
-        }
-
-
-
-        const { error } = await supabase.from("clientes").insert({
-            nome,
-            telefone,
-            //nascimento: nascimentoFormatado,
-            //cpf,//
-            //endereco,
-            // numero,
-            //cep,
-            // bairro,
-            // cidade,
-            //estado,
-            user_id: authData.user.id
-        })
-
-        console.log("ERRO SUPABASE:", error)
+            .eq("user_id", user.id)
+            .order("nome", { ascending: true })
 
         if (error) {
-            alert(error.message)
+            console.error("Erro:", error)
             return
         }
 
-        alert("Salvou com sucesso")
+        setClientes(data || [])
+    }, [user])
 
-        router.push("/agenda")
-        router.refresh()
-    }
+    // 🔥 DISPARA CARREGAMENTO
+    useEffect(() => {
+        if (!user) return
 
+        async function carregar() {
+            const { data, error } = await supabase
+                .from("clientes")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("nome", { ascending: true })
 
+            if (error) {
+                console.error(error)
+                return
+            }
+
+            setClientes(data || [])
+        }
+
+        carregar()
+    }, [user])
+
+    // 🔥 FILTRO BUSCA
+    const clientesFiltrados = clientes
+        .filter(c =>
+            c.nome?.toLowerCase().includes(busca.toLowerCase()) ||
+            c.telefone?.includes(busca)
+        )
+        .sort((a, b) => a.nome.localeCompare(b.nome))
+
+    if (loading) return <div className="p-4">Carregando...</div>
+    if (!user) return null
 
     return (
-        <div className="min-h-screen bg-gray-100 flex justify-center items-start p-6">
-            <div className="w-full max-w-xl bg-white rounded-2xl shadow p-8 space-y-4">
+        <div className="min-h-screen bg-gray-100 p-4">
 
-                {/* HEADER */}
-                <div className="flex items-center mb-6">
-                    <button
-                        onClick={() => router.back()}
-                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition group"
-                    >
-                        <svg
-                            className="w-5 h-5 stroke-gray-700 transition-transform duration-300 group-hover:-translate-x-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth="2.5"
-                            stroke="currentColor"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 6l-6 6 6 6" />
-                        </svg>
-                    </button>
+            {/* HEADER */}
+            <div className="flex items-center justify-between mb-4">
 
-                    <h1 className="flex-1 text-center text-xl font-bold text-gray-800">
-                        Novo Cliente
-                    </h1>
-
-                    {/* Espaço para balancear o layout */}
-                    <div className="w-10" />
-                </div>
-
-                {/* FORM */}
-                <div className="space-y-4">
-
-                    <h2 className="text-sm font-semibold text-gray-500 mb-2 uppercase tracking-wide">
-                        Informações pessoais
-                    </h2>
-
-                    <input
-                        placeholder="Nome"
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                        className="w-full border p-3 rounded-lg"
-                    />
-
-                    <input
-                        type="text"
-                        placeholder="Telefone"
-                        value={telefone}
-                        onChange={(e) => {
-                            let v = e.target.value.replace(/\D/g, "")
-
-                            if (v.length > 11) v = v.slice(0, 11)
-
-                            if (v.length > 6)
-                                v = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`
-                            else if (v.length > 2)
-                                v = `(${v.slice(0, 2)}) ${v.slice(2)}`
-                            else
-                                v = v
-
-                            setTelefone(v)
-                        }}
-                        className="w-full border p-2 mb-3 rounded"
-                    />
-
-
-
-
-
-
-                </div>
-
-                {/* BOTÃO EMBAIXO */}
                 <button
-                    onClick={salvar}
-                    className="w-full bg-blue-600 text-white p-3 rounded-xl font-semibold text-lg shadow-md hover:bg-blue-700 active:scale-95 transition"                >
-                    Salvar
+                    onClick={() => router.back()}
+                    className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-200 hover:bg-gray-300 transition"
+                >
+                    ←
                 </button>
 
-                <p className="text-xs text-center text-gray-400 mt-4">
-                    Seus dados são protegidos conforme a política de privacidade
-                </p>
+                <h1 className="text-xl font-bold">Clientes</h1>
+
+                <button
+                    onClick={() => router.push("/clientes/novo")}
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg"
+                >
+                    + Cliente
+                </button>
 
             </div>
+
+            {/* BUSCA */}
+            <div className="mb-4">
+                <input
+                    type="text"
+                    placeholder="Procurar por nome ou telefone..."
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    className="w-full border p-3 rounded-lg"
+                />
+            </div>
+
+            {/* LISTA */}
+            <div className="bg-white rounded-xl shadow overflow-hidden">
+
+                {clientesFiltrados.length === 0 && (
+                    <div className="p-4 text-center text-gray-500">
+                        Nenhum cliente encontrado
+                    </div>
+                )}
+
+                {clientesFiltrados.map(cliente => (
+                    <div
+                        key={cliente.id}
+                        className="flex items-center justify-between border-b px-4 py-3 hover:bg-gray-50"
+                    >
+
+                        {/* ESQUERDA */}
+                        <div className="flex items-center gap-3">
+
+                            <input
+                                type="checkbox"
+                                className="
+    w-5 h-5
+    accent-blue-600
+    cursor-pointer
+  "
+                            />
+
+                            <div className="w-9 h-9 bg-gray-200 rounded-full flex items-center justify-center font-bold">
+                                {cliente.nome?.charAt(0)}
+                            </div>
+
+                            <div className="flex flex-col">
+                                <span className="text-base font-semibold">{cliente.nome}</span>
+                                <span className="text-sm text-gray-500">
+                                    {cliente.telefone}
+                                </span>
+                            </div>
+
+                        </div>
+
+                        {/* DIREITA */}
+                        <button
+                            onClick={() => {
+                                setClienteEditando(cliente)
+                                setModalCliente(true)
+                            }}
+                            className="text-gray-500 hover:text-black text-xl"
+                        >
+                            ⋮
+                        </button>
+
+                    </div>
+                ))}
+
+            </div>
+
+            {/* MODAL EDITAR */}
+            {modalCliente && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+                    <div className="bg-white p-6 rounded-xl w-80">
+
+                        <h2 className="text-lg font-bold mb-4">
+                            Editar Cliente
+                        </h2>
+
+                        <input
+                            value={clienteEditando?.nome || ""}
+                            onChange={(e) =>
+                                setClienteEditando(prev => ({
+                                    ...prev,
+                                    nome: e.target.value
+                                }))
+                            }
+                            className="w-full border p-2 mb-2 rounded"
+                            placeholder="Nome"
+                        />
+
+                        <input
+                            value={clienteEditando?.telefone || ""}
+                            onChange={(e) =>
+                                setClienteEditando(prev => ({
+                                    ...prev,
+                                    telefone: e.target.value
+                                }))
+                            }
+                            className="w-full border p-2 mb-4 rounded"
+                            placeholder="Telefone"
+                        />
+
+                        <button
+                            onClick={async () => {
+
+                                if (!clienteEditando?.nome) {
+                                    alert("Nome obrigatório")
+                                    return
+                                }
+
+                                const { error } = await supabase
+                                    .from("clientes")
+                                    .update({
+                                        nome: clienteEditando.nome,
+                                        telefone: clienteEditando.telefone
+                                    })
+                                    .eq("id", clienteEditando.id)
+
+                                if (error) {
+                                    alert(error.message)
+                                    return
+                                }
+
+                                setModalCliente(false)
+                                setClienteEditando(null)
+                                carregarClientes()
+                            }}
+                            className="w-full bg-green-500 text-white p-2 rounded mb-2"
+                        >
+                            Salvar
+                        </button>
+
+                        <button
+                            onClick={() => setModalCliente(false)}
+                            className="w-full bg-gray-300 p-2 rounded"
+                        >
+                            Cancelar
+                        </button>
+
+                    </div>
+
+                </div>
+            )}
+
         </div>
     )
 }
