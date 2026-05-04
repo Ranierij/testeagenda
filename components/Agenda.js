@@ -100,9 +100,14 @@ export default function Agenda() {
     const larguraColuna = isMobile ? 90 : 140
     const larguraHora = isMobile ? 60 : 80
 
+    const HORA_INICIO = 8
+    const HORA_FIM = 22
+
     const horas = []
-    for (let h = 8; h <= 18; h++) {
+
+    for (let h = HORA_INICIO; h <= HORA_FIM; h++) {
         horas.push(`${String(h).padStart(2, "0")}:00`)
+        horas.push(`${String(h).padStart(2, "0")}:30`)
     }
 
     const carregar = useCallback(async () => {
@@ -786,6 +791,8 @@ export default function Agenda() {
                                 <option value={60}>1 hora</option>
                                 <option value={90}>1h30</option>
                                 <option value={120}>2 horas</option>
+                                <option value={150}>2h30</option>
+                                <option value={180}>3 horas</option>
                             </select>
 
                             <input
