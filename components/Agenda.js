@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { usePathname, useRouter } from "next/navigation"
 import { Calendar, Users, User, Scissors, Wallet } from "lucide-react"
 import { Plus } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
 
 
@@ -65,14 +66,16 @@ export default function Agenda() {
     const [agendamentos, setAgendamentos] = useState([])
     const [clientes, setClientes] = useState([])
     const [mostrarCalendario, setMostrarCalendario] = useState(false)
+    const [mesAtual, setMesAtual] = useState(new Date())
 
 
     const [modalNovo, setModalNovo] = useState(false)
     const [modalView, setModalView] = useState(false)
+    const { user, loading } = useAuth()
 
     const [clienteId, setClienteId] = useState("")
     const [duracao, setDuracao] = useState(60)
-    const [user, setUser] = useState(null)
+
 
     const [eventoSelecionado, setEventoSelecionado] = useState(null)
     const [horaSelecionada, setHoraSelecionada] = useState(null)
@@ -94,6 +97,7 @@ export default function Agenda() {
     const [colaboradorId, setColaboradorId] = useState("")
     const [colaboradorFiltro, setColaboradorFiltro] = useState("")
 
+
     const HORA_ALTURA = 80 // px por hora
     const PIXEL_POR_MINUTO = HORA_ALTURA / 60
     const [isMobile, setIsMobile] = useState(false)
@@ -110,38 +114,47 @@ export default function Agenda() {
         horas.push(`${String(h).padStart(2, "0")}:30`)
     }
 
+
     const carregar = useCallback(async () => {
+        if (!user) return
+
         try {
             const [agRes, clRes, svRes, colRes] = await Promise.all([
-                supabase.from("agendamentos").select("*"),
-                supabase.from("clientes").select("*"),
-                supabase.from("servicos").select("*"),
-                supabase.from("colaboradores").select("*"),
+                supabase
+                    .from("agendamentos")
+                    .select("*")
+                    .eq("user_id", user.id),
+
+                supabase
+                    .from("clientes")
+                    .select("*")
+                    .eq("user_id", user.id),
+
+                supabase
+                    .from("servicos")
+                    .select("*")
+                    .eq("user_id", user.id),
+
+                supabase
+                    .from("colaboradores")
+                    .select("*")
+                    .eq("user_id", user.id),
             ])
 
             setAgendamentos(agRes.data || [])
             setClientes(clRes.data || [])
             setServicos(svRes.data || [])
             setColaboradores(colRes.data || [])
+
         } catch (err) {
             console.error("Erro ao carregar:", err)
         }
-    }, [])
+    }, [user]) // 👈 CRÍTICO
 
 
     useEffect(() => {
-        async function getUser() {
-            const { data } = await supabase.auth.getUser()
-            setUser(data.user)
-        }
-
-        getUser()
-    }, [])
-
-    useEffect(() => {
-        if (user) {
-            carregar()
-        }
+        if (!user) return
+        carregar()
     }, [user, data, carregar])
 
     useEffect(() => {
@@ -153,19 +166,15 @@ export default function Agenda() {
 
         window.addEventListener("resize", handleResize)
 
+        if (loading) return <div>Carregando...</div>
+        if (!user) return null
+
+
         return () => {
             window.removeEventListener("resize", handleResize)
         }
     }, [])
 
-    useEffect(() => {
-        async function getUser() {
-            const { data } = await supabase.auth.getUser()
-            setUser(data.user)
-        }
-
-        getUser()
-    }, [])
 
     function formatarData(d) {
         return d.toLocaleDateString("pt-BR")
@@ -180,6 +189,18 @@ export default function Agenda() {
     function abrirNovo(hora) {
         setHoraSelecionada(hora)
         setModalNovo(true)
+    }
+
+    function proximoMes() {
+        const novo = new Date(mesAtual)
+        novo.setMonth(novo.getMonth() + 1)
+        setMesAtual(novo)
+    }
+
+    function mesAnterior() {
+        const novo = new Date(mesAtual)
+        novo.setMonth(novo.getMonth() - 1)
+        setMesAtual(novo)
     }
 
     function abrirEvento(evt) {
@@ -261,14 +282,24 @@ export default function Agenda() {
     }
 
     function gerarCalendario() {
-        const fimMes = new Date(data.getFullYear(), data.getMonth() + 1, 0)
+        const inicioMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), 1)
+        const fimMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0)
+
         const dias = []
 
         for (let i = 1; i <= fimMes.getDate(); i++) {
-            dias.push(new Date(data.getFullYear(), data.getMonth(), i))
+            dias.push(new Date(mesAtual.getFullYear(), mesAtual.getMonth(), i))
         }
 
         return dias
+    }
+
+    function proximoMes() {
+        setMesAtual(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+    }
+
+    function mesAnterior() {
+        setMesAtual(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
     }
 
     function calcularEstiloEvento(evt) {
@@ -939,9 +970,30 @@ export default function Agenda() {
                     >
                         <div className="bg-white p-4 rounded-xl w-80">
 
-                            <h2 className="font-semibold mb-3 text-center">
-                                Selecionar Data
-                            </h2>
+                            <div className="flex items-center justify-between mb-3">
+
+                                <button
+                                    onClick={mesAnterior}
+                                    className="px-3 py-1 bg-gray-200 rounded"
+                                >
+                                    ←
+                                </button>
+
+                                <h2 className="font-semibold text-center">
+                                    {mesAtual.toLocaleDateString("pt-BR", {
+                                        month: "long",
+                                        year: "numeric"
+                                    })}
+                                </h2>
+
+                                <button
+                                    onClick={proximoMes}
+                                    className="px-3 py-1 bg-gray-200 rounded"
+                                >
+                                    →
+                                </button>
+
+                            </div>
 
                             <div className="grid grid-cols-7 gap-1 text-sm">
                                 {gerarCalendario().map((d, i) => (
@@ -949,6 +1001,7 @@ export default function Agenda() {
                                         key={i}
                                         onClick={() => {
                                             setData(d)
+                                            setMesAtual(d) // 🔥 importante
                                             setMostrarCalendario(false)
                                         }}
                                         className="p-2 text-center rounded hover:bg-gray-200 cursor-pointer"
