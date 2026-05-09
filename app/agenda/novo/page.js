@@ -1,19 +1,35 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 
-export default function NovoAgendamento() {
+export default function Page() {
+
+    return (
+        <Suspense fallback={null}>
+            <NovoAgendamento />
+        </Suspense>
+    )
+}
+
+function NovoAgendamento() {
 
     const router = useRouter()
     const { user } = useAuth()
 
     const searchParams = useSearchParams()
 
-    const hora = searchParams.get("hora")
-    const colaborador = searchParams.get("colaborador")
+    const [mounted, setMounted] = useState(false)
+
+    const hora = mounted
+        ? searchParams.get("hora")
+        : null
+
+    const colaborador = mounted
+        ? searchParams.get("colaborador")
+        : null
 
     const [cliente, setCliente] = useState("")
     const [servico, setServico] = useState("")
@@ -34,6 +50,7 @@ export default function NovoAgendamento() {
 
     const [mostrarBuscaColaborador, setMostrarBuscaColaborador] = useState(false)
     const [colaboradorId, setColaboradorId] = useState(colaborador || "")
+
 
 
     useEffect(() => {
@@ -74,6 +91,12 @@ export default function NovoAgendamento() {
         }
 
     }, [colaboradores, colaborador])
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted) return null
 
 
     async function carregarDados() {
