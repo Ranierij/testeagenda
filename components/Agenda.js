@@ -81,6 +81,8 @@ export default function Agenda() {
     const [mostrarBuscaColaborador, setMostrarBuscaColaborador] = useState(false)
     const buscaRef = useRef(null)
     const [duracao, setDuracao] = useState(60)
+    const [repetir, setRepetir] = useState(false)
+    const [diasRepeticao, setDiasRepeticao] = useState(1)
 
 
     const [eventoSelecionado, setEventoSelecionado] = useState(null)
@@ -386,26 +388,41 @@ export default function Agenda() {
     }
 
     function getEventosHoraColaborador(hora, colaboradorId) {
+
         return agendamentos.filter(a => {
+
             if (!a.inicio || !a.fim) return false
 
             if (a.colaborador_id !== colaboradorId) return false
 
-            const inicio = new Date(a.inicio.replace(" ", "T"))
-            const fim = new Date(a.fim.replace(" ", "T"))
+            // DATA DO EVENTO
+            const [ano, mes, dia] = a.data.split("-")
 
+            const dataEvento = new Date(
+                Number(ano),
+                Number(mes) - 1,
+                Number(dia)
+            )
+
+            // MESMO DIA SELECIONADO
             const mesmoDia =
-                inicio.getDate() === data.getDate() &&
-                inicio.getMonth() === data.getMonth() &&
-                inicio.getFullYear() === data.getFullYear()
+                dataEvento.getDate() === data.getDate() &&
+                dataEvento.getMonth() === data.getMonth() &&
+                dataEvento.getFullYear() === data.getFullYear()
 
             if (!mesmoDia) return false
 
-            const [h, m] = hora.split(":")
-            const slot = new Date(data)
-            slot.setHours(Number(h), Number(m), 0, 0)
+            // HORA DO EVENTO
+            const [horaEvento, minutoEvento] = a.hora.split(":")
 
-            return slot >= inicio && slot < fim
+            // SLOT ATUAL
+            const [h, m] = hora.split(":")
+
+            // MOSTRA SOMENTE NA LINHA INICIAL
+            return (
+                Number(horaEvento) === Number(h) &&
+                Number(minutoEvento) === Number(m)
+            )
         })
     }
 
@@ -471,9 +488,12 @@ export default function Agenda() {
             Number(m)
         )
 
-        const fim = new Date(inicio.getTime() + duracao * 60000)
+        const fim = new Date(
+            inicio.getTime() + Number(duracao) * 60000
+        )
 
-        function formatLocal(date) {
+        function formatarData(date) {
+
             const pad = (n) => String(n).padStart(2, "0")
 
             return (
@@ -485,8 +505,9 @@ export default function Agenda() {
             )
         }
 
-        const inicioStr = formatLocal(inicio)
-        const fimStr = formatLocal(fim)
+        const agendamentosParaSalvar = []
+        const inicioStr = formatarData(inicio)
+        const fimStr = formatarData(fim)
 
         const conflito = agendamentos.some(a => {
 
@@ -532,22 +553,49 @@ export default function Agenda() {
                 return
             }
         } else {
-            const { error } = await supabase
-                .from("agendamentos")
-                .insert({
+            const agendamentosParaSalvar = []
+
+            const quantidadeRepeticoes = repetir
+                ? diasRepeticao
+                : 1
+
+            for (let i = 0; i < quantidadeRepeticoes; i++) {
+
+                const novoInicio = new Date(inicio)
+                novoInicio.setDate(novoInicio.getDate() + i)
+
+                const novoFim = new Date(fim)
+                novoFim.setDate(novoFim.getDate() + i)
+
+                const dataLoop =
+                    novoInicio.getFullYear() + "-" +
+                    String(novoInicio.getMonth() + 1).padStart(2, "0") + "-" +
+                    String(novoInicio.getDate()).padStart(2, "0")
+
+                const horaLoop =
+                    String(novoInicio.getHours()).padStart(2, "0") +
+                    ":" +
+                    String(novoInicio.getMinutes()).padStart(2, "0")
+
+                agendamentosParaSalvar.push({
                     user_id: user.id,
                     empresa_id: empresaId,
                     cliente_id: clienteId,
                     servico_id: servicoId,
                     colaborador_id: colaboradorId,
-                    inicio: inicioStr,
-                    fim: fimStr,
-                    data: dia,
-                    hora: horaSelecionada,
+                    inicio: formatarData(novoInicio),
+                    fim: formatarData(novoFim),
+                    data: dataLoop,
+                    hora: horaLoop,
                     forma_pagamento: formaPagamento,
                     valor: Number(valor),
                     duracao: duracao
                 })
+            }
+
+            const { error } = await supabase
+                .from("agendamentos")
+                .insert(agendamentosParaSalvar)
 
             if (error) {
                 console.log("ERRO SUPABASE:", error)
@@ -936,7 +984,9 @@ export default function Agenda() {
                                                 onClick={() => {
                                                     if (!ocupado) {
                                                         // Redireciona para a tela de atendimento
-                                                        router.push(`/agenda/novo?hora=${encodeURIComponent(hora)}&colaborador=${col.id}`)
+                                                        router.push(
+                                                            `/agenda/novo?hora=${encodeURIComponent(hora)}&colaborador=${col.id}&data=${data.toISOString().split("T")[0]}`
+                                                        )
                                                     }
                                                 }}
                                             >
@@ -945,24 +995,47 @@ export default function Agenda() {
                                                         Adicionar Agendamento
                                                     </div>
                                                 )}
-                                                {eventos.map((evt, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={`absolute inset-1 rounded-lg shadow-sm hover:shadow-md transition text-white p-2 text-xs cursor-pointer ${getCorColaborador(evt.colaborador_id)}`}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            abrirEvento(evt)
-                                                        }}
-                                                    >
-                                                        <div className="font-semibold text-sm leading-tight">
-                                                            {getCliente(evt.cliente_id)?.nome}
+                                                {eventos.map((evt, i) => {
+
+                                                    const altura =
+                                                        (Number(evt.duracao || 60) / 30) * 96
+
+                                                    return (
+
+                                                        <div
+                                                            key={i}
+                                                            style={{
+                                                                height: `${altura - 8}px`
+                                                            }}
+                                                            className={`
+                absolute left-1 right-1 top-1
+                rounded-lg shadow-sm hover:shadow-md
+                transition text-white p-2 text-xs
+                cursor-pointer overflow-hidden
+                ${getCorColaborador(evt.colaborador_id)}
+            `}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                abrirEvento(evt)
+                                                            }}
+                                                        >
+
+                                                            <div className="font-semibold text-sm leading-tight">
+                                                                {getCliente(evt.cliente_id)?.nome}
+                                                            </div>
+
+                                                            <div className="text-[12px] opacity-90 mt-1">
+                                                                {servicos.find(s => s.id === evt.servico_id)?.nome}
+                                                            </div>
+
+                                                            <div className="text-[10px] opacity-80 mt-1">
+                                                                {evt.hora}
+                                                            </div>
+
                                                         </div>
-                                                        <div className="text-[12px] opacity-90 mt-1">
-                                                            {servicos.find(s => s.id === evt.servico_id)?.nome}
-                                                        </div>
-                                                        <div className="text-[10px] opacity-80">{hora}</div>
-                                                    </div>
-                                                ))}
+
+                                                    )
+                                                })}
                                             </div>
                                         )
                                     })}
@@ -1148,6 +1221,42 @@ export default function Agenda() {
                                 className="w-full border p-2 mb-3 rounded"
                             />
 
+
+                            <div className="mb-3 border rounded p-3">
+
+                                <label className="flex items-center gap-2 mb-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={repetir}
+                                        onChange={(e) => setRepetir(e.target.checked)}
+                                    />
+
+                                    Repetir atendimento
+                                </label>
+
+                                {repetir && (
+
+                                    <div>
+
+                                        <div className="text-sm text-gray-600 mb-1">
+                                            Quantos dias repetir
+                                        </div>
+
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={diasRepeticao}
+                                            onChange={(e) =>
+                                                setDiasRepeticao(Number(e.target.value))
+                                            }
+                                            className="w-full border p-2 rounded"
+                                        />
+
+                                    </div>
+
+                                )}
+
+                            </div>
                             <select
                                 value={formaPagamento}
                                 onChange={(e) => setFormaPagamento(e.target.value)}

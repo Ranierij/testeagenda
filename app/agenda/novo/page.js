@@ -31,6 +31,10 @@ function NovoAgendamento() {
         ? searchParams.get("colaborador")
         : null
 
+    const dataSelecionada = mounted
+        ? searchParams.get("data")
+        : null
+
     const [cliente, setCliente] = useState("")
     const [servico, setServico] = useState("")
     const [valor, setValor] = useState("")
@@ -175,20 +179,19 @@ function NovoAgendamento() {
 
         const empresaId = perfilData?.empresa_id
 
-        const hoje = new Date()
-
-        const dataFormatada =
-            hoje.getFullYear() + "-" +
-            String(hoje.getMonth() + 1).padStart(2, "0") + "-" +
-            String(hoje.getDate()).padStart(2, "0")
+        const dataFormatada = dataSelecionada
 
         const [h, m] = hora.split(":")
 
-        const inicio = new Date()
+        const [ano, mes, dia] = dataSelecionada.split("-")
 
-        inicio.setHours(Number(h))
-        inicio.setMinutes(Number(m))
-        inicio.setSeconds(0)
+        const inicio = new Date(
+            Number(ano),
+            Number(mes) - 1,
+            Number(dia),
+            Number(h),
+            Number(m)
+        )
 
         const fim = new Date(
             inicio.getTime() + Number(duracao) * 60000
@@ -207,21 +210,60 @@ function NovoAgendamento() {
             )
         }
 
-        const { error } = await supabase
-            .from("agendamentos")
-            .insert({
+        const agendamentosParaSalvar = []
+
+        // AGENDAMENTO ORIGINAL
+        agendamentosParaSalvar.push({
+            empresa_id: empresaId,
+            cliente_id: clienteId,
+            colaborador_id: colaboradorId,
+            servico_id: servicoId,
+            inicio: formatarData(inicio),
+            fim: formatarData(fim),
+            valor: Number(valor),
+            duracao: Number(duracao),
+            observacao,
+            data: dataFormatada,
+            hora
+        })
+
+        // REPETIÇÃO FUTURA
+        if (repetir) {
+
+            const novoInicio = new Date(inicio)
+            novoInicio.setDate(novoInicio.getDate() + diasRepeticao)
+
+            const novoFim = new Date(fim)
+            novoFim.setDate(novoFim.getDate() + diasRepeticao)
+
+            const dataLoop =
+                novoInicio.getFullYear() + "-" +
+                String(novoInicio.getMonth() + 1).padStart(2, "0") + "-" +
+                String(novoInicio.getDate()).padStart(2, "0")
+
+            const horaLoop =
+                String(novoInicio.getHours()).padStart(2, "0") +
+                ":" +
+                String(novoInicio.getMinutes()).padStart(2, "0")
+
+            agendamentosParaSalvar.push({
                 empresa_id: empresaId,
                 cliente_id: clienteId,
                 colaborador_id: colaboradorId,
                 servico_id: servicoId,
-                inicio: formatarData(inicio),
-                fim: formatarData(fim),
+                inicio: formatarData(novoInicio),
+                fim: formatarData(novoFim),
                 valor: Number(valor),
                 duracao: Number(duracao),
                 observacao,
-                data: dataFormatada,
-                hora
+                data: dataLoop,
+                hora: horaLoop
             })
+        }
+
+        const { error } = await supabase
+            .from("agendamentos")
+            .insert(agendamentosParaSalvar)
 
         if (error) {
 
