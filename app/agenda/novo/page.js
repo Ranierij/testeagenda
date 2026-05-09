@@ -4,6 +4,8 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { useState, useEffect, Suspense } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
+import { Search, User, ChevronRight, X, Plus } from "lucide-react"
+
 
 export default function Page() {
 
@@ -50,6 +52,9 @@ function NovoAgendamento() {
     const [clienteId, setClienteId] = useState("")
     const [buscaCliente, setBuscaCliente] = useState("")
     const [mostrarBuscaCliente, setMostrarBuscaCliente] = useState(false)
+
+    const [modalClientes, setModalClientes] = useState(false)
+    const [clienteDetalhe, setClienteDetalhe] = useState(null)
     const [servicoId, setServicoId] = useState("")
 
     const [mostrarBuscaColaborador, setMostrarBuscaColaborador] = useState(false)
@@ -144,16 +149,17 @@ function NovoAgendamento() {
         setColaboradores(colaboradoresData || [])
     }
 
-    const clientesFiltrados = clientes.filter(cliente => {
+    const clientesFiltrados = clientes
+        .filter(cliente => {
 
-        const termo = buscaCliente.toLowerCase()
+            const termo = buscaCliente.toLowerCase()
 
-        return (
-            cliente.nome?.toLowerCase().includes(termo) ||
-            cliente.telefone?.toLowerCase().includes(termo)
-        )
-    })
-
+            return (
+                cliente.nome?.toLowerCase().includes(termo) ||
+                cliente.telefone?.toLowerCase().includes(termo)
+            )
+        })
+        .sort((a, b) => a.nome.localeCompare(b.nome))
     async function salvarAgendamento() {
 
         if (!clienteId) {
@@ -313,65 +319,13 @@ function NovoAgendamento() {
 
                         <input
                             type="text"
-                            placeholder="Buscar cliente por nome ou telefone..."
+                            placeholder="Buscar cliente..."
                             value={buscaCliente}
-                            onChange={(e) => {
-                                setBuscaCliente(e.target.value)
-                                setMostrarBuscaCliente(true)
-                            }}
-                            onFocus={() => setMostrarBuscaCliente(true)}
-                            className="w-full border p-3 rounded-xl"
+                            readOnly
+                            onClick={() => setModalClientes(true)}
+                            className="w-full border p-3 rounded-xl cursor-pointer"
                         />
 
-                        {mostrarBuscaCliente && buscaCliente && (
-
-                            <div className="
-            absolute z-50
-            w-full bg-white border rounded-xl shadow-lg
-            max-h-60 overflow-y-auto mt-1
-        ">
-
-                                {clientesFiltrados.length === 0 && (
-                                    <div className="p-3 text-gray-500">
-                                        Nenhum cliente encontrado
-                                    </div>
-                                )}
-
-                                {clientesFiltrados.map(cliente => (
-
-                                    <div
-                                        key={cliente.id}
-                                        onClick={() => {
-
-                                            setClienteId(cliente.id)
-
-                                            setBuscaCliente(
-                                                `${cliente.nome} - ${cliente.telefone || ""}`
-                                            )
-
-                                            setMostrarBuscaCliente(false)
-                                        }}
-                                        className="
-                        p-3 cursor-pointer
-                        hover:bg-gray-100 border-b
-                    "
-                                    >
-
-                                        <div className="font-medium">
-                                            {cliente.nome}
-                                        </div>
-
-                                        <div className="text-sm text-gray-500">
-                                            {cliente.telefone}
-                                        </div>
-
-                                    </div>
-
-                                ))}
-
-                            </div>
-
-                        )}
 
                     </div>
 
@@ -687,9 +641,98 @@ function NovoAgendamento() {
                     SALVAR
                 </button>
 
+
             </div>
 
-        </div>
+            {/* MODAL CLIENTES */}
+            {modalClientes && (
 
+                <div className="
+                fixed inset-0 z-[99999]
+                bg-black/40
+                flex items-center justify-center
+            ">
+
+                    <div className="
+                    bg-white
+                    w-[95%]
+                    max-w-md
+                    h-[80vh]
+                    rounded-2xl
+                    overflow-hidden
+                    flex flex-col
+                ">
+
+                        {/* TOPO */}
+                        <div className="
+                        flex items-center gap-3
+                        border-b p-4
+                    ">
+
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="Buscar Cliente..."
+                                value={buscaCliente}
+                                onChange={(e) => setBuscaCliente(e.target.value)}
+                                className="
+                                flex-1
+                                border rounded-lg
+                                p-2
+                            "
+                            />
+
+                            <button
+                                onClick={() => setModalClientes(false)}
+                                className="text-2xl text-gray-500"
+                            >
+                                ×
+                            </button>
+
+                        </div>
+
+                        {/* LISTA */}
+                        <div className="flex-1 overflow-y-auto">
+
+                            {clientesFiltrados.map(cliente => (
+
+                                <div
+                                    key={cliente.id}
+                                    className="
+                                    flex items-center justify-between
+                                    p-4 border-b
+                                    hover:bg-gray-50
+                                "
+                                >
+
+                                    <div className="font-medium">
+                                        {cliente.nome}
+                                    </div>
+
+                                    <div className="flex items-center gap-4">
+
+                                        <button
+                                            onClick={() => {
+                                                router.push(`/clientes/${cliente.id}`)
+                                            }}
+                                            className="text-pink-500"
+                                        >
+                                            <User size={20} />
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+                            ))}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            )}
+        </div>
     )
 }
