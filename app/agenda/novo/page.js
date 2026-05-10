@@ -705,7 +705,17 @@ function NovoAgendamento() {
                                 "
                                 >
 
-                                    <div className="font-medium">
+                                    <div
+                                        onClick={() => {
+
+                                            setClienteId(cliente.id)
+
+                                            setBuscaCliente(cliente.nome)
+
+                                            setModalClientes(false)
+                                        }}
+                                        className="font-medium cursor-pointer text-pink-500"
+                                    >
                                         {cliente.nome}
                                     </div>
 
