@@ -727,7 +727,7 @@ function NovoAgendamento() {
                                             }}
                                             className="text-pink-500"
                                         >
-                                            <User size={20} />
+                                            <User size={24} />
                                         </button>
 
                                     </div>
