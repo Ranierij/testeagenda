@@ -610,8 +610,8 @@ function NovoAgendamento() {
                                 className="w-full border rounded p-2 mt-1"
                             >
                                 <option value={7}>7 dias</option>
-                                <option value={15}>15 dias</option>
-                                <option value={30}>30 dias</option>
+                                <option value={15}>14 dias</option>
+                                <option value={30}>28 dias</option>
                                 <option value={45}>45 dias</option>
                             </select>
 
