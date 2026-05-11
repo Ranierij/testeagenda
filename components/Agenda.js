@@ -718,13 +718,12 @@ export default function Agenda() {
                 />
 
                 {(perfil?.role === "admin" || perfil?.role === "owner") && (
-                    <NavButton
-                        href="/financeiro"
-                        pathname={pathname}
-                        router={router}
-                    >
-                        Financeiro
-                    </NavButton>
+                    <MobileNavItem
+                        icon={<Wallet size={20} />}
+                        label="Financeiro"
+                        active={pathname.startsWith("/financeiro")}
+                        onClick={() => router.push("/financeiro")}
+                    />
                 )}
 
             </div>
