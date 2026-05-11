@@ -1351,6 +1351,13 @@ export default function Agenda() {
                                 R$ {eventoSelecionado.valor || 0}
                             </div>
 
+                            {eventoSelecionado.observacao && (
+                                <div className="mb-4">
+                                    <strong>Observação:</strong>{" "}
+                                    {eventoSelecionado.observacao}
+                                </div>
+                            )}
+
                             <button
                                 onClick={abrirWhatsApp}
                                 className="w-full bg-green-500 text-white p-2 mb-2 rounded"
