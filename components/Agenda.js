@@ -1042,7 +1042,7 @@ export default function Agenda() {
                                                             </div>
 
                                                             {eventoPrincipal.observacao && (
-                                                                <div className="text-[10px] opacity-80 mt-1 line-clamp-2">
+                                                                <div className="text-[13px] opacity-80 mt-1 line-clamp-2">
                                                                     {eventoPrincipal.observacao}
                                                                 </div>
                                                             )}
