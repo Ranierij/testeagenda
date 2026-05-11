@@ -57,8 +57,11 @@ function NovoAgendamento() {
     const [clienteDetalhe, setClienteDetalhe] = useState(null)
     const [servicoId, setServicoId] = useState("")
 
-    const [mostrarBuscaColaborador, setMostrarBuscaColaborador] = useState(false)
     const [colaboradorId, setColaboradorId] = useState(colaborador || "")
+
+    const [modalColaboradores, setModalColaboradores] = useState(false)
+    const [buscaColaborador, setBuscaColaborador] = useState("")
+
 
 
 
@@ -160,7 +163,23 @@ function NovoAgendamento() {
             )
         })
         .sort((a, b) => a.nome.localeCompare(b.nome))
+
+
+    const colaboradoresFiltrados = colaboradores
+        .filter(col =>
+            col.nome?.toLowerCase().includes(
+                buscaColaborador.toLowerCase()
+            )
+        )
+        .sort((a, b) => a.nome.localeCompare(b.nome))
+
+
     async function salvarAgendamento() {
+
+        if (!clienteId) {
+            alert("Selecione o cliente")
+            return
+        }
 
         if (!clienteId) {
             alert("Selecione o cliente")
@@ -333,88 +352,25 @@ function NovoAgendamento() {
 
 
                 {/* PROFISSIONAL */}
-                {/* PROFISSIONAL */}
                 <div className="mb-6">
 
                     <label className="block text-sm mb-2">
                         Profissional
                     </label>
 
-                    <div className="relative">
-
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setMostrarBuscaColaborador(!mostrarBuscaColaborador)
-                            }
-                            className="
-                w-full
-                border
-                rounded-xl
-                p-3
-                flex items-center justify-between
-                bg-white
-            "
-                        >
-
-                            <span>
-
-                                {
-                                    colaboradores.find(c => c.id === colaboradorId)?.nome
-                                    || "Selecione o profissional"
-                                }
-
-                            </span>
-
-                            <span className="text-gray-400">
-                                ▼
-                            </span>
-
-                        </button>
-
-                        {mostrarBuscaColaborador && (
-
-                            <div className="
-                absolute z-50
-                w-full
-                bg-white
-                border
-                rounded-xl
-                shadow-lg
-                mt-1
-                overflow-hidden
-            ">
-
-                                {colaboradores.map(col => (
-
-                                    <button
-                                        key={col.id}
-                                        type="button"
-                                        onClick={() => {
-
-                                            setColaboradorId(col.id)
-
-                                            setMostrarBuscaColaborador(false)
-                                        }}
-                                        className="
-                            w-full text-left
-                            p-3
-                            hover:bg-gray-100
-                            border-b
-                        "
-                                    >
-
-                                        {col.nome}
-
-                                    </button>
-
-                                ))}
-
-                            </div>
-
-                        )}
-
-                    </div>
+                    <input
+                        type="text"
+                        readOnly
+                        placeholder="Selecionar profissional"
+                        value={
+                            colaboradores.find(c => c.id === colaboradorId)?.nome || ""
+                        }
+                        onClick={() => setModalColaboradores(true)}
+                        className="
+            w-full border p-3 rounded-xl
+            cursor-pointer
+        "
+                    />
 
                 </div>
 
@@ -743,6 +699,108 @@ function NovoAgendamento() {
                 </div>
 
             )}
+
+
+
+            {/* MODAL COLABORADORES */}
+            {modalColaboradores && (
+
+                <div className="
+                    fixed inset-0 z-[99999]
+                    bg-black/40
+                    flex items-center justify-center
+                ">
+
+                    <div className="
+                        bg-white
+                        w-[95%]
+                        max-w-md
+                        h-[80vh]
+                        rounded-2xl
+                        overflow-hidden
+                        flex flex-col
+                    ">
+
+                        <div className="
+                            flex items-center gap-3
+                            border-b p-4
+                        ">
+
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="Buscar Profissional..."
+                                value={buscaColaborador}
+                                onChange={(e) =>
+                                    setBuscaColaborador(e.target.value)
+                                }
+                                className="
+                                    flex-1
+                                    border rounded-lg
+                                    p-2
+                                "
+                            />
+
+                            <button
+                                onClick={() => setModalColaboradores(false)}
+                                className="text-2xl text-gray-500"
+                            >
+                                <X size={24} />
+                            </button>
+
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto">
+
+                            {colaboradoresFiltrados.map(col => (
+
+                                <div
+                                    key={col.id}
+                                    className="
+                                        flex items-center justify-between
+                                        p-4 border-b
+                                        hover:bg-gray-50
+                                    "
+                                >
+
+                                    <div
+                                        onClick={() => {
+
+                                            setColaboradorId(col.id)
+
+                                            setModalColaboradores(false)
+                                        }}
+                                        className="
+                                            font-medium
+                                            cursor-pointer
+                                            text-pink-500
+                                        "
+                                    >
+                                        {col.nome}
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            router.push(`/colaboradores/${col.id}`)
+                                        }}
+                                        className="text-pink-500"
+                                    >
+                                        <User size={20} />
+                                    </button>
+
+                                </div>
+
+                            ))}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            )}
+
         </div>
     )
 }
+

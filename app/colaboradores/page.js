@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { User } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
+
 
 export default function Colaboradores() {
 
@@ -102,45 +104,130 @@ export default function Colaboradores() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 p-6">
 
-            <div className="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow">
+        <div className="min-h-screen bg-[#f6f6f6]">
 
-                <div className="flex justify-between mb-4">
-                    <button onClick={() => router.push("/agenda")}>←</button>
-                    <h1 className="font-bold">Colaboradores</h1>
+            {/* TOPO */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
+
+                <div className="flex items-center gap-4">
+
+                    <button
+                        onClick={() => router.push("/agenda")}
+                        className="text-xl"
+                    >
+                        ←
+                    </button>
+
+                    <h1 className="text-2xl font-semibold">
+                        Colaboradores
+                    </h1>
+
                 </div>
-
-                <input
-                    placeholder="Nome"
-                    value={nome}
-                    onChange={e => setNome(e.target.value)}
-                    className="w-full border p-2 mb-2"
-                />
 
                 <button
                     onClick={salvar}
-                    className="w-full bg-blue-500 text-white p-2 rounded"
+                    className="
+                    w-11 h-11
+                    rounded-full
+                    bg-black
+                    text-white
+                    text-2xl
+                    flex items-center justify-center
+                "
                 >
-                    Salvar
+                    +
                 </button>
 
-                <div className="mt-4 space-y-2">
-                    {colaboradores.map(c => (
-                        <div key={c.id} className="flex justify-between border p-2 rounded">
-                            <span>{c.nome}</span>
+            </div>
 
-                            <button
-                                onClick={() => excluir(c.id)}
-                                className="bg-red-500 text-white px-2 rounded"
-                            >
-                                X
-                            </button>
-                        </div>
-                    ))}
-                </div>
+            {/* BARRA */}
+            <div className="bg-white border-b p-4 flex gap-3">
+
+                <input
+                    placeholder="Nome do colaborador"
+                    value={nome}
+                    onChange={e => setNome(e.target.value)}
+                    className="
+                    flex-1
+                    border
+                    rounded-lg
+                    px-4 py-2
+                    bg-white
+                "
+                />
 
             </div>
+
+            {/* LISTA */}
+            <div>
+
+                {colaboradores
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map(c => (
+
+                        <div
+                            key={c.id}
+                            className="
+                            flex items-center justify-between
+                            px-6 py-5
+                            border-b
+                            bg-white
+                        "
+                        >
+
+                            {/* ESQUERDA */}
+                            <div className="flex items-center gap-4">
+
+                                {/* BOLINHA */}
+                                <div className="
+                                w-10 h-10
+                                rounded-full
+                                bg-gray-200
+                            " />
+
+                                {/* NOME */}
+                                <button
+                                    onClick={() => router.push(`/colaboradores/${c.id}`)}
+                                    className="
+        flex-1 text-left
+        font-medium
+        text-pink-500
+    "
+                                >
+                                    {c.nome}
+                                </button>
+                            </div>
+
+                            {/* DIREITA */}
+                            <div className="flex items-center gap-4">
+
+                                <button
+                                    onClick={() => router.push(`/colaboradores/${c.id}`)}
+                                    className="text-pink-500"
+                                >
+                                    <User size={22} />
+                                </button>
+
+                                <button
+                                    onClick={() => excluir(c.id)}
+                                    className="
+                                    text-gray-400
+                                    text-xl
+                                "
+                                >
+                                    ⋮
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    ))}
+
+            </div>
+
         </div>
+
     )
 }
