@@ -126,7 +126,7 @@ export default function Colaboradores() {
                 </div>
 
                 <button
-                    onClick={salvar}
+                    onClick={() => router.push("/colaboradores/novo")}
                     className="
                     w-11 h-11
                     rounded-full

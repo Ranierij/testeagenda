@@ -95,6 +95,7 @@ export default function Agenda() {
 
     const [formaPagamento, setFormaPagamento] = useState("dinheiro")
     const [valor, setValor] = useState("")
+    const [observacao, setObservacao] = useState("")
     const [modoEdicao, setModoEdicao] = useState(false)
 
     const [servicos, setServicos] = useState([])
@@ -393,36 +394,30 @@ export default function Agenda() {
 
             if (!a.inicio || !a.fim) return false
 
+            // colaborador correto
             if (a.colaborador_id !== colaboradorId) return false
 
-            // DATA DO EVENTO
-            const [ano, mes, dia] = a.data.split("-")
+            // horário do slot atual
+            const [h, m] = hora.split(":")
 
-            const dataEvento = new Date(
-                Number(ano),
-                Number(mes) - 1,
-                Number(dia)
-            )
+            const slot = new Date(data)
 
-            // MESMO DIA SELECIONADO
+            slot.setHours(Number(h), Number(m), 0, 0)
+
+            // datas do evento
+            const inicio = new Date(a.inicio.replace(" ", "T"))
+            const fim = new Date(a.fim.replace(" ", "T"))
+
+            // mesmo dia
             const mesmoDia =
-                dataEvento.getDate() === data.getDate() &&
-                dataEvento.getMonth() === data.getMonth() &&
-                dataEvento.getFullYear() === data.getFullYear()
+                inicio.getDate() === data.getDate() &&
+                inicio.getMonth() === data.getMonth() &&
+                inicio.getFullYear() === data.getFullYear()
 
             if (!mesmoDia) return false
 
-            // HORA DO EVENTO
-            const [horaEvento, minutoEvento] = a.hora.split(":")
-
-            // SLOT ATUAL
-            const [h, m] = hora.split(":")
-
-            // MOSTRA SOMENTE NA LINHA INICIAL
-            return (
-                Number(horaEvento) === Number(h) &&
-                Number(minutoEvento) === Number(m)
-            )
+            // slot está dentro do evento
+            return slot >= inicio && slot < fim
         })
     }
 
@@ -543,7 +538,8 @@ export default function Agenda() {
                     fim: fimStr,
                     forma_pagamento: formaPagamento,
                     valor: Number(valor),
-                    duracao: duracao
+                    duracao: duracao,
+                    observacao: observacao
                 })
                 .eq("id", eventoSelecionado.id)
 
@@ -589,7 +585,8 @@ export default function Agenda() {
                     hora: horaLoop,
                     forma_pagamento: formaPagamento,
                     valor: Number(valor),
-                    duracao: duracao
+                    duracao: duracao,
+                    observacao: observacao
                 })
             }
 
@@ -610,6 +607,7 @@ export default function Agenda() {
         setClienteId("")
         setColaboradorId("")
         setValor("")
+        setObservacao("")
         carregar()
     }
 
@@ -956,7 +954,7 @@ export default function Agenda() {
                         {horas.map(hora => (
                             <div
                                 key={hora}
-                                className="grid"
+                                className="grid overflow-visible"
                                 style={{
                                     gridTemplateColumns: autoColunas
                                         ? `${larguraHora}px repeat(${colaboradoresVisiveis.length}, minmax(150px, 1fr))`
@@ -980,7 +978,10 @@ export default function Agenda() {
                                         return (
                                             <div
                                                 key={col.id}
-                                                className={`relative group h-24 border-r transition ${ocupado ? "bg-gray-50" : "hover:bg-gray-100"}`}
+                                                className={`
+        relative group h-24 border-r transition overflow-visible
+        ${ocupado ? "bg-gray-50" : "hover:bg-gray-100"}
+    `}
                                                 onClick={() => {
                                                     if (!ocupado) {
                                                         // Redireciona para a tela de atendimento
@@ -995,47 +996,66 @@ export default function Agenda() {
                                                         Adicionar Agendamento
                                                     </div>
                                                 )}
-                                                {eventos.map((evt, i) => {
+
+
+                                                {(() => {
+
+                                                    const eventoPrincipal = eventos.find(evt => {
+
+                                                        const inicio = new Date(evt.inicio.replace(" ", "T"))
+
+                                                        return (
+                                                            inicio.getHours() === Number(hora.split(":")[0]) &&
+                                                            inicio.getMinutes() === Number(hora.split(":")[1])
+                                                        )
+                                                    })
+
+                                                    if (!eventoPrincipal) return null
 
                                                     const altura =
-                                                        (Number(evt.duracao || 60) / 30) * 96
+                                                        (Number(eventoPrincipal.duracao || 60) / 30) * 97
 
                                                     return (
 
                                                         <div
-                                                            key={i}
                                                             style={{
-                                                                height: `${altura - 8}px`
+                                                                height: `${altura}px`
                                                             }}
-                                                            className={`
-                absolute left-1 right-1 top-1
-                rounded-lg shadow-sm hover:shadow-md
-                transition text-white p-2 text-xs
-                cursor-pointer overflow-hidden
-                ${getCorColaborador(evt.colaborador_id)}
-            `}
+                                                            className="
+    absolute left-1 right-1 top-1 z-30
+    rounded-lg shadow-sm hover:shadow-md
+    transition text-white p-2 text-xs
+    cursor-pointer overflow-hidden
+    bg-green-500
+"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
-                                                                abrirEvento(evt)
+                                                                abrirEvento(eventoPrincipal)
                                                             }}
                                                         >
-
                                                             <div className="font-semibold text-sm leading-tight">
-                                                                {getCliente(evt.cliente_id)?.nome}
+                                                                {getCliente(eventoPrincipal.cliente_id)?.nome}
                                                             </div>
 
                                                             <div className="text-[12px] opacity-90 mt-1">
-                                                                {servicos.find(s => s.id === evt.servico_id)?.nome}
+                                                                {servicos.find(s => s.id === eventoPrincipal.servico_id)?.nome}
                                                             </div>
 
+                                                            {eventoPrincipal.observacao && (
+                                                                <div className="text-[10px] opacity-80 mt-1 line-clamp-2">
+                                                                    {eventoPrincipal.observacao}
+                                                                </div>
+                                                            )}
+
                                                             <div className="text-[10px] opacity-80 mt-1">
-                                                                {evt.hora}
+                                                                {eventoPrincipal.hora}
                                                             </div>
 
                                                         </div>
 
                                                     )
-                                                })}
+
+                                                })()}
                                             </div>
                                         )
                                     })}
@@ -1257,6 +1277,14 @@ export default function Agenda() {
                                 )}
 
                             </div>
+
+                            <textarea
+                                placeholder="Observação"
+                                value={observacao}
+                                onChange={(e) => setObservacao(e.target.value)}
+                                className="w-full border p-3 mb-3 rounded resize-none"
+                                rows={3}
+                            />
                             <select
                                 value={formaPagamento}
                                 onChange={(e) => setFormaPagamento(e.target.value)}
@@ -1312,6 +1340,8 @@ export default function Agenda() {
 
                                     setValor(eventoSelecionado.valor || "")
                                     setFormaPagamento(eventoSelecionado.forma_pagamento || "dinheiro")
+
+                                    setObservacao(eventoSelecionado.observacao || "")
 
                                     const dur =
                                         (new Date(eventoSelecionado.fim.replace(" ", "T")) -
