@@ -13,46 +13,47 @@ export default function Servicos() {
     const [nome, setNome] = useState("")
     const [valor, setValor] = useState("")
     const [duracao, setDuracao] = useState("")
+
+    const [modalNovo, setModalNovo] = useState(false)
+    const [modalEditar, setModalEditar] = useState(false)
+
+    const [servicoSelecionado, setServicoSelecionado] = useState(null)
+
     const [servicos, setServicos] = useState([])
     const [editandoId, setEditandoId] = useState(null)
+
     const { user } = useAuth()
 
     useEffect(() => {
         carregarServicos()
     }, [])
 
+
     async function carregarServicos() {
-        const { data } = await supabase
+
+        console.log("CARREGANDO SERVICOS")
+
+        const { data, error } = await supabase
             .from("servicos")
             .select("*")
-            .order("created_at", { ascending: false })
+
+        console.log("SERVICOS:", data)
+        console.log("ERRO:", error)
+
+        if (error) {
+            console.log(error)
+            return
+        }
 
         setServicos(data || [])
     }
 
     function editar(servico) {
+
         setNome(servico.nome)
         setValor(servico.valor)
         setDuracao(servico.duracao || "")
         setEditandoId(servico.id)
-    }
-
-    async function excluir(id) {
-
-        const confirmar = confirm("Deseja excluir este serviço?")
-        if (!confirmar) return
-
-        const { error } = await supabase
-            .from("servicos")
-            .delete()
-            .eq("id", id)
-
-        if (error) {
-            alert(error.message)
-            return
-        }
-
-        carregarServicos()
     }
 
     async function salvar() {
@@ -123,11 +124,16 @@ export default function Servicos() {
         setDuracao("")
         setEditandoId(null)
 
-        carregarServicos()
+        setModalNovo(false)
+        setModalEditar(false)
+
+        setServicoSelecionado(null)
+
+        await carregarServicos()
     }
     return (
         <div className="min-h-screen bg-gray-100 flex justify-center items-start p-6">
-            <div className="w-full max-w-xl bg-white rounded-2xl shadow p-8 space-y-4">
+            <div className="w-full bg-white min-h-screen">
 
                 {/* HEADER */}
                 <div className="flex items-center mb-6">
@@ -155,74 +161,238 @@ export default function Servicos() {
                 </div>
 
                 {/* FORM */}
-                <input
-                    placeholder="Nome do serviço"
-                    value={nome}
-                    onChange={e => setNome(e.target.value)}
-                    className="w-full border p-3 rounded-lg"
-                />
+                <div className="flex justify-end">
 
-                <input
-                    placeholder="Valor (ex: 50.00)"
-                    value={valor}
-                    onChange={e => setValor(e.target.value)}
-                    className="w-full border p-3 rounded-lg"
-                />
+                    <button
+                        onClick={() => {
+                            setNome("")
+                            setValor("")
+                            setDuracao("")
+                            setEditandoId(null)
+                            setModalNovo(true)
+                        }}
+                        className="
+            w-12 h-12 rounded-full
+            bg-black text-white
+            text-3xl
+            flex items-center justify-center
+        "
+                    >
+                        +
+                    </button>
 
-                <input
-                    placeholder="Duração (minutos)"
-                    value={duracao}
-                    onChange={e => setDuracao(e.target.value)}
-                    className="w-full border p-3 rounded-lg"
-                />
-
-                <button
-                    onClick={salvar}
-                    className="w-full bg-blue-600 text-white p-3 rounded-xl font-semibold hover:bg-blue-700 transition"
-                >
-                    {editandoId ? "Atualizar Serviço" : "Salvar Serviço"}
-                </button>
+                </div>
 
                 {/* LISTA */}
-                <div className="pt-4 space-y-2">
+                <div className="pt-2">
 
                     {servicos.map(s => (
+
                         <div
                             key={s.id}
-                            className="border p-3 rounded flex justify-between items-center"
+                            className="
+    flex items-center justify-between
+    px-6 py-5
+    border-b
+    bg-white
+    hover:bg-gray-50
+    transition
+"
                         >
+
+                            {/* ESQUERDA */}
                             <div>
-                                <p className="font-semibold">{s.nome}</p>
-                                <p className="text-sm text-gray-500">
-                                    {s.duracao ? `${s.duracao} min` : ""}
-                                </p>
-                            </div>
 
-                            <div className="flex items-center gap-2">
-                                <p className="font-bold">
+                                <div className="font-semibold text-pink-500">
+                                    {s.nome}
+                                </div>
+
+                                <div className="text-sm text-gray-500 mt-1">
                                     R$ {Number(s.valor).toFixed(2)}
-                                </p>
 
-                                <button
-                                    onClick={() => editar(s)}
-                                    className="bg-yellow-400 px-2 py-1 rounded text-sm"
-                                >
-                                    Editar
-                                </button>
+                                    {s.duracao && (
+                                        <> • {s.duracao} min</>
+                                    )}
+                                </div>
 
-                                <button
-                                    onClick={() => excluir(s.id)}
-                                    className="bg-red-500 text-white px-2 py-1 rounded text-sm"
-                                >
-                                    X
-                                </button>
                             </div>
+
+                            {/* DIREITA */}
+                            <button
+                                onClick={() => {
+
+                                    setServicoSelecionado(s)
+
+                                    editar(s)
+
+                                    setModalEditar(true)
+                                }}
+                                className="
+                    text-gray-400
+                    text-2xl
+                    px-2
+                "
+                            >
+                                ⋮
+                            </button>
+
                         </div>
+
                     ))}
 
                 </div>
 
             </div>
+
+            {modalNovo && (
+
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+                    <div className="bg-white p-6 rounded-2xl w-80">
+
+                        <h2 className="text-lg font-bold mb-4">
+                            Novo Serviço
+                        </h2>
+
+                        <input
+                            placeholder="Nome do serviço"
+                            value={nome}
+                            onChange={e => setNome(e.target.value)}
+                            className="w-full border p-3 rounded-lg mb-3"
+                        />
+
+                        <input
+                            placeholder="Valor"
+                            value={valor}
+                            onChange={e => setValor(e.target.value)}
+                            className="w-full border p-3 rounded-lg mb-3"
+                        />
+
+                        <input
+                            placeholder="Duração (min)"
+                            value={duracao}
+                            onChange={e => setDuracao(e.target.value)}
+                            className="w-full border p-3 rounded-lg mb-4"
+                        />
+
+                        <button
+                            onClick={async () => {
+
+                                await salvar()
+
+                                await carregarServicos()
+
+                                setModalNovo(false)
+                            }}
+                            className="w-full bg-pink-500 text-white p-3 rounded-xl mb-2"
+                        >
+                            Salvar Serviço
+                        </button>
+
+                        <button
+                            onClick={() => setModalNovo(false)}
+                            className="w-full bg-gray-200 p-3 rounded-xl"
+                        >
+                            Cancelar
+                        </button>
+
+                    </div>
+
+                </div>
+
+            )}
+
+            {/* MODAL EDITAR */}
+            {modalEditar && servicoSelecionado && (
+
+                <div className="
+        fixed inset-0 z-50
+        bg-pink/500
+        flex items-center justify-center
+        p-4
+    ">
+
+                    <div className="
+            bg-white w-full max-w-md
+            rounded-2xl p-6
+            space-y-4
+        ">
+
+                        <h2 className="text-xl font-bold">
+                            Editar Serviço
+                        </h2>
+
+                        <input
+                            placeholder="Nome do serviço"
+                            value={nome}
+                            onChange={e => setNome(e.target.value)}
+                            className="w-full border p-3 rounded-lg"
+                        />
+
+                        <input
+                            placeholder="Valor"
+                            value={valor}
+                            onChange={e => setValor(e.target.value)}
+                            className="w-full border p-3 rounded-lg"
+                        />
+
+                        <input
+                            placeholder="Duração"
+                            value={duracao}
+                            onChange={e => setDuracao(e.target.value)}
+                            className="w-full border p-3 rounded-lg"
+                        />
+
+                        <div className="flex gap-3">
+
+                            <button
+                                onClick={async () => {
+
+                                    await salvar()
+
+                                    setModalEditar(false)
+
+                                    setServicoSelecionado(null)
+                                }}
+                                className="
+                        flex-1
+                        bg-pink-500
+                        text-white
+                        p-3
+                        rounded-xl
+                    "
+                            >
+                                Salvar
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setModalEditar(false)
+                                    setServicoSelecionado(null)
+
+                                    setNome("")
+                                    setValor("")
+                                    setDuracao("")
+                                    setEditandoId(null)
+                                }}
+                                className="
+                        flex-1
+                        bg-gray-200
+                        p-3
+                        rounded-xl
+                    "
+                            >
+                                Cancelar
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            )}
+
         </div>
     )
 }
