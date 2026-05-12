@@ -247,7 +247,7 @@ export default function NovoCliente() {
 
                             <div>
 
-                                <div className="font-medium">
+                                <div className="font-medium text-pink-500">
                                     {cliente.nome}
                                 </div>
 

@@ -118,7 +118,7 @@ export default function NovoCliente() {
                     onClick={salvar}
                     className="
                         w-full
-                        bg-black
+                        bg-pink-500
                         text-white
                         p-3
                         rounded-lg

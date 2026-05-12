@@ -101,6 +101,7 @@ export default function Agenda() {
     const [servicos, setServicos] = useState([])
     const [servicoId, setServicoId] = useState("")
     const [servicoSelecionado, setServicoSelecionado] = useState(null)
+    const [mostrarBuscaServico, setMostrarBuscaServico] = useState(false)
 
     const [colaboradores, setColaboradores] = useState([])
     const [colaboradorId, setColaboradorId] = useState("")
@@ -1095,7 +1096,7 @@ export default function Agenda() {
 
                                     <div className="
             absolute z-50
-            w-full bg-white border rounded-lg shadow-lg
+            w-full bg-pink-500 border rounded-lg shadow-lg
             max-h-60 overflow-y-auto mt-1
         ">
 
@@ -1179,7 +1180,7 @@ export default function Agenda() {
                     "
                                             >
 
-                                                <div className="font-medium">
+                                                <div className="font-medium text-pink-500">
                                                     {col.nome}
                                                 </div>
 
@@ -1193,31 +1194,95 @@ export default function Agenda() {
 
                             </div>
 
-                            <select
-                                value={servicoId}
-                                onChange={(e) => {
-                                    const id = e.target.value
-                                    setServicoId(id)
+                            <div className="relative mb-3 z-50">
 
-                                    const servico = servicos.find(s => s.id === id)
-                                    setServicoSelecionado(servico)
-
-                                    // 🔥 auto preenche valor e duração
-                                    if (servico) {
-                                        setValor(servico.valor)
-                                        setDuracao(servico.duracao || 60)
+                                <input
+                                    type="text"
+                                    placeholder="Selecione o serviço"
+                                    value={
+                                        servicos.find(s => s.id === servicoId)?.nome || ""
                                     }
-                                }}
-                                className="w-full border p-2 mb-3 rounded"
-                            >
-                                <option value="">Selecione o serviço</option>
+                                    onClick={() =>
+                                        setMostrarBuscaServico(!mostrarBuscaServico)
+                                    }
+                                    readOnly
+                                    className="
+            w-full border p-3 rounded
+            text-pink-500
+            font-medium
+            cursor-pointer
+        "
+                                />
 
-                                {servicos.map(s => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.nome} - R$ {Number(s.valor).toFixed(2)}
-                                    </option>
-                                ))}
-                            </select>
+                                {mostrarBuscaServico && (
+
+                                    <div
+                                        style={{ backgroundColor: "#ec4899" }}
+                                        className="
+        absolute top-full left-0
+        w-full
+        border
+        rounded-lg
+        shadow-lg
+        mt-1
+        z-[9999]
+        overflow-hidden
+    "
+                                    >
+                                        {servicos.map(s => (
+
+                                            <div
+                                                key={s.id}
+                                                onClick={() => {
+
+                                                    setServicoId(s.id)
+
+                                                    setServicoSelecionado(s)
+
+                                                    setValor(s.valor)
+
+                                                    setDuracao(s.duracao || 60)
+
+                                                    setMostrarBuscaServico(false)
+                                                }}
+
+                                                style={{
+                                                    backgroundColor: "#3b82f6",
+                                                    color: "white",
+                                                    borderBottom: "1px solid #60a5fa"
+                                                }}
+
+                                                className="
+            p-3
+            cursor-pointer
+        "
+
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.backgroundColor = "#2563eb"
+                                                }}
+
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.backgroundColor = "#3b82f6"
+                                                }}
+                                            >
+
+                                                <div className="font-medium">
+                                                    {s.nome}
+                                                </div>
+
+                                                <div style={{ color: "#fbcfe8" }} className="text-sm">
+                                                    R$ {Number(s.valor).toFixed(2)}
+                                                </div>
+
+                                            </div>
+
+                                        ))}
+
+                                    </div>
+
+                                )}
+
+                            </div>
 
                             <select
                                 value={duracao}
@@ -1317,7 +1382,7 @@ export default function Agenda() {
             <AnimatePresence>
                 {modalView && eventoSelecionado && (
                     <motion.div
-                        className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+                        className="fixed inset-0 bg-pink-500 flex items-center justify-center z-50"
                     >
                         <div className="bg-white p-6 rounded w-80">
 
