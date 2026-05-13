@@ -1258,7 +1258,7 @@ export default function Agenda() {
         "
 
                                                 onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = "#2563eb"
+                                                    e.currentTarget.style.backgroundColor = "#2563e4"
                                                 }}
 
                                                 onMouseLeave={(e) => {
