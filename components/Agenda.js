@@ -934,10 +934,10 @@ export default function Agenda() {
                                 }}
                                 className={`
     px-4 py-2 rounded-lg font-medium transition
-    text-lg
+    text-2xl
                 ${data.toDateString() === new Date().toDateString()
-                                        ? "bg-gray-200 text-gray-500"
-                                        : "bg-blue-500 text-white hover:bg-blue-600"
+                                        ? "bg-gray-100 text-black"
+                                        : "bg-blue-400 text-white hover:bg-blue-400"
                                     }
             `}
                             >
