@@ -253,37 +253,71 @@ function NovoAgendamento() {
         })
 
         // REPETIÇÃO FUTURA
+        // REPETIÇÕES FUTURAS
         if (repetir) {
 
-            const novoInicio = new Date(inicio)
-            novoInicio.setDate(novoInicio.getDate() + diasRepeticao)
+            let quantidadeRepeticoes = 1
 
-            const novoFim = new Date(fim)
-            novoFim.setDate(novoFim.getDate() + diasRepeticao)
+            switch (diasRepeticao) {
 
-            const dataLoop =
-                novoInicio.getFullYear() + "-" +
-                String(novoInicio.getMonth() + 1).padStart(2, "0") + "-" +
-                String(novoInicio.getDate()).padStart(2, "0")
+                case 7:
+                    quantidadeRepeticoes = 52
+                    break
 
-            const horaLoop =
-                String(novoInicio.getHours()).padStart(2, "0") +
-                ":" +
-                String(novoInicio.getMinutes()).padStart(2, "0")
+                case 14:
+                    quantidadeRepeticoes = 26
+                    break
 
-            agendamentosParaSalvar.push({
-                empresa_id: empresaId,
-                cliente_id: clienteId,
-                colaborador_id: colaboradorId,
-                servico_id: servicoId,
-                inicio: formatarData(novoInicio),
-                fim: formatarData(novoFim),
-                valor: Number(valor),
-                duracao: Number(duracao),
-                observacao,
-                data: dataLoop,
-                hora: horaLoop
-            })
+                case 30:
+                    quantidadeRepeticoes = 13
+                    break
+
+                case 45:
+                    quantidadeRepeticoes = 9
+                    break
+
+                default:
+                    quantidadeRepeticoes = 1
+            }
+
+            for (let i = 1; i <= quantidadeRepeticoes; i++) {
+
+                const novoInicio = new Date(inicio)
+
+                novoInicio.setDate(
+                    novoInicio.getDate() + (i * diasRepeticao)
+                )
+
+                const novoFim = new Date(fim)
+
+                novoFim.setDate(
+                    novoFim.getDate() + (i * diasRepeticao)
+                )
+
+                const dataLoop =
+                    novoInicio.getFullYear() + "-" +
+                    String(novoInicio.getMonth() + 1).padStart(2, "0") + "-" +
+                    String(novoInicio.getDate()).padStart(2, "0")
+
+                const horaLoop =
+                    String(novoInicio.getHours()).padStart(2, "0") +
+                    ":" +
+                    String(novoInicio.getMinutes()).padStart(2, "0")
+
+                agendamentosParaSalvar.push({
+                    empresa_id: empresaId,
+                    cliente_id: clienteId,
+                    colaborador_id: colaboradorId,
+                    servico_id: servicoId,
+                    inicio: formatarData(novoInicio),
+                    fim: formatarData(novoFim),
+                    valor: Number(valor),
+                    duracao: Number(duracao),
+                    observacao,
+                    data: dataLoop,
+                    hora: horaLoop
+                })
+            }
         }
 
         const { error } = await supabase

@@ -83,6 +83,7 @@ export default function Agenda() {
     const [duracao, setDuracao] = useState(60)
     const [repetir, setRepetir] = useState(false)
     const [diasRepeticao, setDiasRepeticao] = useState(1)
+    const [intervaloRepeticao, setIntervaloRepeticao] = useState(7)
 
 
     const [eventoSelecionado, setEventoSelecionado] = useState(null)
@@ -462,6 +463,9 @@ export default function Agenda() {
 
 
     const salvar = async () => {
+
+        console.log("REPETIR:", repetir)
+
         if (!user) {
             alert("Erro: usuário não carregado")
             return
@@ -552,17 +556,51 @@ export default function Agenda() {
         } else {
             const agendamentosParaSalvar = []
 
-            const quantidadeRepeticoes = repetir
-                ? diasRepeticao
-                : 1
+            let quantidadeRepeticoes = 1
+
+            if (repetir) {
+
+                console.log("REPETIR ATIVO")
+                console.log("INTERVALO:", intervaloRepeticao)
+
+                switch (intervaloRepeticao) {
+
+                    case 7:
+                        quantidadeRepeticoes = 53
+                        break
+
+                    case 14:
+                        quantidadeRepeticoes = 27
+                        break
+
+                    case 28:
+                        quantidadeRepeticoes = 14
+                        break
+
+                    case 45:
+                        quantidadeRepeticoes = 10
+                        break
+
+                    default:
+                        quantidadeRepeticoes = 1
+                }
+            }
+
+
 
             for (let i = 0; i < quantidadeRepeticoes; i++) {
-
+                console.log("LOOP:", i)
                 const novoInicio = new Date(inicio)
-                novoInicio.setDate(novoInicio.getDate() + i)
 
-                const novoFim = new Date(fim)
-                novoFim.setDate(novoFim.getDate() + i)
+                novoInicio.setDate(
+                    inicio.getDate() + (i * intervaloRepeticao)
+                )
+
+                const novoFim = new Date(novoInicio.getTime())
+
+                novoFim.setMinutes(
+                    novoFim.getMinutes() + Number(duracao)
+                )
 
                 const dataLoop =
                     novoInicio.getFullYear() + "-" +
@@ -591,9 +629,24 @@ export default function Agenda() {
                 })
             }
 
-            const { error } = await supabase
+            console.log("AGENDAMENTOS:", agendamentosParaSalvar)
+
+
+            console.log("TOTAL:", agendamentosParaSalvar.length)
+
+            console.log(
+                JSON.stringify(
+                    agendamentosParaSalvar,
+                    null,
+                    2
+                )
+            )
+            const resultado = await supabase
                 .from("agendamentos")
                 .insert(agendamentosParaSalvar)
+                .select()
+
+            console.log("RESULTADO INSERT:", resultado)
 
             if (error) {
                 console.log("ERRO SUPABASE:", error)
@@ -868,34 +921,48 @@ export default function Agenda() {
                 <div className="flex-1 overflow-y-auto">
 
                     <div className="flex items-center justify-between px-4 py-3 border-b bg-white sticky top-0 z-40">
-
                         {/* ESQUERDA */}
-                        <button
-                            onClick={() => mudarDia(-1)}
-                            className="bg-gray-100 px-3 py-2 rounded-lg"
-                        >
-                            ⬅️
-                        </button>
+                        {/* ESQUERDA */}
+                        <div className="w-32 flex justify-start">
 
-                        {/* CENTRO (DATA) */}
+                            <button
+                                onClick={() => {
+                                    const hoje = new Date()
+
+                                    setData(hoje)
+                                    setMesAtual(hoje)
+                                }}
+                                className={`
+    px-4 py-2 rounded-lg font-medium transition
+    text-lg
+                ${data.toDateString() === new Date().toDateString()
+                                        ? "bg-gray-200 text-gray-500"
+                                        : "bg-blue-500 text-white hover:bg-blue-600"
+                                    }
+            `}
+                            >
+                                Hoje
+                            </button>
+
+                        </div>
+
+                        {/* CENTRO */}
                         <button
                             onClick={() => setMostrarCalendario(true)}
                             className="
-        flex items-center gap-6
-        px-6 py-3
-        rounded-xl
-        hover:bg-gray-100
-        transition
-    "
+            flex items-center gap-6
+            px-6 py-3
+            rounded-xl
+            hover:bg-gray-100
+            transition
+        "
                         >
 
-                            {/* SETA ESQUERDA */}
-                            <span className="text-blue-500 text-2xl">
+                            <span className="text text-5xl">
                                 ‹
                             </span>
 
-                            {/* DATA */}
-                            <div className="text-3xl font-semibold text-gray-800 capitalize">
+                            <div className="text-4xl font-semibold text-gray-800 capitalize">
                                 {data.toLocaleDateString("pt-BR", {
                                     weekday: "long",
                                     day: "2-digit",
@@ -903,7 +970,6 @@ export default function Agenda() {
                                 })}
                             </div>
 
-                            {/* SETA DIREITA */}
                             <span className="text-blue-500 text-2xl">
                                 ›
                             </span>
@@ -911,14 +977,13 @@ export default function Agenda() {
                         </button>
 
                         {/* DIREITA */}
-                        <button
-                            onClick={() => mudarDia(1)}
-                            className="bg-gray-100 px-3 py-2 rounded-lg"
-                        >
-                            ➡️
-                        </button>
+                        <div className="w-32" />
+
+
+
 
                     </div>
+
 
                     <div className="overflow-auto">                        {/* HEADER COLABORADORES */}
                         <div
@@ -1312,7 +1377,7 @@ export default function Agenda() {
                                     <input
                                         type="checkbox"
                                         checked={repetir}
-                                        onChange={(e) => setRepetir(e.target.checked)}
+                                        onChange={() => setRepetir(prev => !prev)}
                                     />
 
                                     Repetir atendimento
@@ -1322,19 +1387,24 @@ export default function Agenda() {
 
                                     <div>
 
-                                        <div className="text-sm text-gray-600 mb-1">
-                                            Quantos dias repetir
+                                        <div className="text-sm text-gray-600 mb-2">
+                                            Reagendar a cada:
                                         </div>
 
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={diasRepeticao}
+                                        <select
+                                            value={intervaloRepeticao}
                                             onChange={(e) =>
-                                                setDiasRepeticao(Number(e.target.value))
+                                                setIntervaloRepeticao(Number(e.target.value))
                                             }
-                                            className="w-full border p-2 rounded"
-                                        />
+                                            className="w-full border p-2 rounded mb-3"
+                                        >
+                                            <option value={7}>7 dias</option>
+                                            <option value={14}>14 dias</option>
+                                            <option value={28}>28 dias</option>
+                                            <option value={45}>45 dias</option>
+                                        </select>
+
+
 
                                     </div>
 
